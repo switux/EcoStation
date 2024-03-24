@@ -1,0 +1,421 @@
+<!doctype html>
+<!--
+   index.html
+
+	(c) 2023-2024 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<html lang="en">
+<head>
+	<title>
+		EcoStation -- Configuration
+	</title>
+	<style>
+		body {
+			background: black;
+			font-family: helvetica, sans-serif;
+		}
+		td {
+			border-bottom: 1px dotted #606060;
+		}
+		.led {
+			display: inline-flex;
+			align-items: center;
+		}
+		.led_color {
+			width: 5px;
+			height: 5px;
+			border-radius: 50%;
+			background-color: red;
+			margin-right: 5px;
+		}
+		.top_menu {
+			display: flex;
+			flex-direction: row;
+		}
+		.top_menu {
+			margin-right: 2px;
+			border-top: 0px solid;
+			border-left: 0px solid;
+			border-right: 0px solid;
+			border-radius: 10px 10px 0px 0px;
+			padding: 10px;
+			cursor: zoom-in;
+		}
+		.unselected_top_menu {
+			background: #dbdbdb;
+			margin-bottom: 2px;
+		}
+		.selected_top_menu {
+			background: #f6f6f6;
+			margin-bottom: 0px;
+		}
+		.panel {
+			display: none;
+			border-radius: 5px;
+		}
+		.active_panel {
+			display: flex;
+			background-color: #f6f6f6;
+		}
+		.left_panel {
+			border-radius: 0px 5px 5px;
+		}
+		.awsbutton {
+			text-align:center;
+			background: #f6f6f6;
+			font-weight: bold;
+			width: 80px;
+			padding-top: 5px;
+			padding-bottom: 5px;
+			border: 3px solid #ff3030;
+			border-radius: 20px;
+			-webkit-transition: all .15s ease-in-out; 
+			transition: all .15s ease-in-out;
+			color: #ff3030;
+		}
+		.awsstatus {
+			margin-left:30px;
+			text-align:center;
+			font-weight: bold;
+			padding-top: 5px;
+			padding-bottom: 5px;
+			padding-left: 10px;
+			padding-right: 10px;
+		}
+		@keyframes blink { 50% { opacity: 0; } }
+	</style>
+	<script src="/aws.js"></script>
+</head>
+	
+<body onload="retrieve_data();">
+
+	<div id="banners" style="display:flex; flex-direction: row">
+		<div id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
+		<div id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
+		<div id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
+		<div id="banner_devices"  class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" role="button" tabIndex="0">Devices</div>
+		<div id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
+	</div> <!-- banners -->
+
+	<form method="post" action="" id="config"/>
+
+	<div id="config_panel">
+
+		<div id="general" class="panel active_panel" style="border-radius: 0px 5px 5px 5px">
+
+			<div id="_general" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="General config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
+					<tr><td>Timezone Name</td><td><input form="config" name="tzname" id="tzname" type="text" value="" size="35"/></td></tr>
+					<tr><td>Automatic updates</td><td><input form="config" name="automatic_updates" id="automatic_updates" type="checkbox"/></td></tr>
+					<tr><td>Data push</td><td>Frequency: <input form="config" name="push_freq" id="push_freq" style="text-align:right" type="text" value="" size="4"/>s <input form="config" name="data_push" id="data_push" type="checkbox"/> Enabled</td></tr>
+					<tr><td>OTA URL</td><td><input form="config" name="ota_url" id="ota_url" type="text" value="" size="80"/></td></tr>
+				</table>
+
+			</div> <!-- _general -->
+			
+		</div> <!-- general -->
+	
+		<div id="network" style="flex-direction:line">
+
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+				<table aria-describedby="Network config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
+					<tr id="show_wifi_mode">
+						<td>Mode</td>
+						<td>
+							<input id="Client" form="config" name="wifi_mode" value="0" type="radio" onchange="toggle_wifi_mode(0);"/> Station
+							<input id="AP" form="config" name="wifi_mode" value="1" type="radio" onchange="toggle_wifi_mode(1);"/> AP
+							<input id="Both" form="config" name="wifi_mode" value="2" type="radio" onchange="toggle_wifi_mode(2);"/> AP+Station
+						</td>
+					</tr>
+					<tr id="show_sta_ssid">
+						<td>Station SSID</td>
+						<td><input form="config" id="sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
+					</tr>
+					<tr id="show_wifi_sta_password">
+						<td>Station Password</td>
+						<td><input form="config" id="wifi_sta_password" name="wifi_sta_password" type="text" value="" size="15"/></td>
+					</tr>
+					<tr id="show_wifi_sta_ip_mode">
+						<td>Station IP configuration</td>
+						<td>
+							<input form="config" id="wifi_sta_dhcp" name="wifi_sta_ip_mode" value="0" type="radio" onchange="toggle_sta_ipgw(0);"/> DHCP
+							<input form="config" id="wifi_sta_fixed" name="wifi_sta_ip_mode" value="1" type="radio" onchange="toggle_sta_ipgw(1);"/> Fixed
+						</td>
+					</tr>
+					<tr id="show_wifi_sta_ip">
+						<td>Station IP</td>
+						<td><input form="config" id="wifi_sta_ip" name="wifi_sta_ip" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_wifi_sta_gw">
+						<td>Station IP gateway</td>
+						<td><input form="config" id="wifi_sta_gw" name="wifi_sta_gw" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_wifi_sta_dns">
+						<td>Station DNS</td>
+						<td><input form="config" id="wifi_sta_dns" name="wifi_sta_dns" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_ap_ssid">
+						<td>AP SSID</td>
+						<td><input form="config" id="ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
+					</tr>
+					<tr id="show_wifi_ap_password">
+						<td>AP Password</td>
+						<td><input form="config" id="wifi_ap_password" name="wifi_ap_password" type="text" value="" size="15"/></td>
+					</tr>
+					<tr id="show_wifi_ap_ip_mode">
+						<td>AP IP configuration</td>
+						<td>
+							<input form="config" id="wifi_ap_dhcp" name="wifi_ap_ip_mode" value="0" type="radio"  onchange="toggle_ap_ipgw(0);"/> DHCP
+							<input form="config" id="wifi_ap_fixed" name="wifi_ap_ip_mode" value="1" type="radio"  onchange="toggle_ap_ipgw(1);"/> Fixed
+						</td>
+					</tr>
+					<tr id="show_wifi_ap_ip">
+						<td>AP IP</td>
+						<td><input form="config" id="wifi_ap_ip" name="wifi_ap_ip" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_wifi_ap_gw">
+						<td>AP IP gateway</td>
+						<td><input form="config" id="wifi_ap_gw" name="wifi_ap_gw" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_wifi_ap_dns">
+						<td>AP DNS</td>
+						<td><input form="config" id="wifi_ap_dns" name="wifi_ap_dns" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_eth_ip_mode">
+						<td>Ethernet IP configuration</td>
+						<td>
+							<input form="config" id="eth_dhcp" name="eth_ip_mode" value="0" type="radio"  onchange="toggle_eth_ipgw(0);"/> DHCP
+							<input form="config" id="eth_fixed" name="eth_ip_mode" value="1" type="radio"  onchange="toggle_eth_ipgw(1);"/> Fixed
+						</td>
+					</tr>
+					<tr id="show_eth_ip">
+						<td>Ethernet IP</td>
+						<td><input form="config" id="eth_ip" name="eth_ip" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_eth_gw">
+						<td>Ethernet IP gateway</td>
+						<td><input form="config" id="eth_gw" name="eth_gw" value="" type="text" size="15"></td>
+					</tr>
+					<tr id="show_eth_dns">
+						<td>Ethernet DNS</td>
+						<td><input form="config" id="eth_dns" name="eth_dns" value="" type="text" size="15"></td>
+					</tr>
+					<tr>
+						<td>Remote server</td>
+						<td><input form="config" name="remote_server" id="remote_server" type="text" value="" size="20"/></td>
+					</tr>
+					<tr>
+						<td>URL Path</td>
+						<td><input form="config" name="url_path" id="url_path" type="text" value="" size="20"/></td>
+					</tr>
+				</table>
+			</div>
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+				<table aria-describedby="ROOT CA">
+					<tr><th/></tr>
+					<tr>
+						<td>ROOT CA</td>
+						<td><textarea form="config" name="root_ca" id="root_ca" style="height:544px;width:475px"></textarea></td>
+					</tr>
+				</table>
+			</div>
+		</div> <!-- network -->
+		
+		<div id="sensors">
+	
+			<div id="sensor_list" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Sensors config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Sensor</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Parameters</th></tr>
+					<tr>
+						<td>Temperature / Pressure / Humidity</td>
+						<td style="text-align:center"><input form="config" name="has_bme" type="checkbox" id="has_bme"/></td>
+					</tr>
+					<tr>
+						<td>Luminosity / SQM</td>
+						<td style="text-align:center"><input form="config" name="has_tsl" type="checkbox" id="has_tsl"/></td>
+					</tr>
+					<tr>
+						<td>Cloud detection</td>
+						<td style="text-align:center"><input form="config" name="has_mlx" type="checkbox" id="has_mlx"/></td>
+						<td>
+							K1=<input style="border: 0px" form="config" name="k1" type="text" id="k1" size=3 value="33"/>
+							K2=<input style="border: 0px" form="config" name="k2" type="text" id="k2" size=3 value="0"/>
+							K3=<input style="border: 0px" form="config" name="k3" type="text" id="k3" size=3 value="8"/>
+							K4=<input style="border: 0px" form="config" name="k4" type="text" id="k4" size=3 value="100"/>
+							K5=<input style="border: 0px" form="config" name="k5" type="text" id="k5" size=3 value="100"/>
+							K6=<input style="border: 0px" form="config" name="k6" type="text" id="k6" size=3 value="0"/>
+							K7=<input style="border: 0px" form="config" name="k7" type="text" id="k7" size=3 value="0"/>
+						</td>
+					</tr>
+				</table>
+
+			</div> <!-- sensor_list -->
+
+			<div id="cloud_detection" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Cloud detection config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Attribute</th><th style="border-bottom: 1px solid">Value</th></tr>
+					<tr>
+						<td>AWS corrected sky temperature for "cloudy"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aws_cloudy" type="text" id="cc_aws_cloudy" size=4/></td>
+					</tr>
+					<tr>
+						<td>AWS corrected sky temperature for "overcast"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aws_overcast" type="text" id="cc_aws_overcast" size=4/></td>
+					</tr>
+					<tr>
+						<td>AAG corrected sky temperature for "cloudy"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aag_cloudy" type="text" id="cc_aag_cloudy" size=4/></td>
+					</tr>
+					<tr>
+						<td>AAG corrected sky temperature for "overcast"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aag_overcast" type="text" id="cc_aag_overcast" size=4/></td>
+					</tr>
+				</table>
+
+			</div> <!-- sensor_list -->
+
+		</div> <!-- sensors -->
+
+		<div id="devices">
+
+			<div id="_devices" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Other devices config"  style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Device</th><th  style="border-bottom: 1px solid">Enabled</th></tr>
+					<tr>
+						<td>GPS</td>
+						<td style="text-align:center"><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td>
+					</tr>
+				</table>
+
+			</div> <!-- devices -->
+			
+		</div> <!-- devices -->
+
+		<div id="dashboard" style="flex-direction: column">
+
+			<div style="display: flex; flex-direction: row">
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Station health" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid">Health report</th></tr>
+						<tr><td>Battery level</td><td><span id="battery_level"></span></td></tr>
+						<tr><td>Uptime</td><td><span id="uptime"></span></td></tr>
+						<tr><td>Last reset reason</td><td><span id="reset_reason"></span></td></tr>
+						<tr><td>Initial heap size</td><td><span id="initial_heap"></span></td></tr>
+						<tr><td>Current heap size</td><td><span id="current_heap"></span></td></tr>
+						<tr><td>Largest free heap block</td><td><span id="largest_heap_block"></span></td></tr>
+					</table>
+
+				</div> <!-- health -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="OTA" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid; position: relative">OTA</th></tr>
+						<tr><td>OTA board model</td><td><span id="ota_board"></span></td></tr>
+						<tr><td>OTA device ID</td><td><span id="ota_device"></span></td></tr>
+						<tr><td>OTA config</td><td><span id="ota_config"></span></td></tr>
+						<tr><td>OTA status</td><td><span id="ota_status"></span></td></tr>
+					</table>
+
+				</div> <!-- OTA -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="OTA" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid">GPS</tr>
+						<tr><td>GPS Fix</td><td><span id="gps_fix"></span></td></tr>
+						<tr><td>Longitude</td><td><span id="gps_longitude"></span></td></tr>
+						<tr><td>Latitude</td><td><span id="gps_latitude"></span></td></tr>
+						<tr><td>Altitude</td><td><span id="gps_altitude"></span> m</td></tr>
+						<tr><td>GPS time</td><td><span id="gps_time"></span></td></tr>
+					</table>
+
+				</div> <!-- GPS -->
+
+			</div>
+			
+			<div style="display: flex; flex-direction: row">
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Weather data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">Weather data</tr>
+						<tr><td><span id="temp_led" class="led"><span class="led_color"></span></span></td><td>Temperature</td><td><span id="temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Dew point</td><td><span id="dewpoint"></span> &deg;C</td></tr>
+						<tr><td><span id="pres_led" class="led"><span class="led_color"></span></span></td><td>Pressure</td><td><span id="pressure"></span> hPA</td></tr>
+						<tr><td><span id="rh_led" class="led"><span class="led_color"></span></span></td><td>Relative humidity</td><td><span id="rh"></span>%</td></tr>
+					</table>
+
+				</div> <!-- weather data -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="SQM data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">SQM data</tr>
+						<tr><td><span id="sqm_led" class="led"><span class="led_color"></span></span></td><td>MSAS</td><td><span id="msas"></span> mag/arcsec&sup2;</td></tr>
+						<tr><td></td><td>NELM</td><td><span id="nelm"></span> mag</td></tr>
+					</table>
+
+				</div> <!-- sqm data -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="SUN data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">SUN data</tr>
+						<tr><td><span id="tsl_led" class="led"><span class="led_color"></span></span></td><td>Illuminance</td><td><span id="illuminance"></span> lx</td></tr>
+						<tr><td></td><td>Irradiance</td><td><span id="irradiance"></span> W/&#13217;</td></tr>
+					</table>
+
+				</div> <!-- sun data -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Cloud data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">Cloud coverage data</tr>
+						<tr><td><span id="cloud_led" class="led"><span class="led_color"></span></span></td><td>Raw sky temperature</td><td><span id="raw_sky_temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Ambient temperature</td><td><span id="ambient_temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Corrected sky temperature</td><td><span id="sky_temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Cloud coverage</td><td><span id="cloud_coverage"></span></td></tr>
+					</table>
+
+				</div> <!-- sun data -->
+
+
+			</div>
+		</div> <!-- dashboard -->
+
+		<div id="apply" style="margin: 10px">
+			<input class="awsbutton" style="width: 80px" type="button" onclick="send_config();" id="toto" form="config" value="SAVE">
+			<input class="awsbutton" style="width: 80px" type="button" onclick="reboot();" value="REBOOT">
+			<input class="awsbutton" style="width: 160px" type="button" onclick="force_ota();" value="Check for new version">
+			<span id="ota_msg"></span>
+			<span class="awsstatus" style="width: 160px;color: #80a080" id="build_id"></span>
+			<span class="awsstatus" style="width: 160px;color: #a08080" id="status"></span>
+			<p style="font-weight: bold" id="feedback"></p>
+		</div>
+	
+	</div> <!-- config_panel -->
+</body>
+</html>
