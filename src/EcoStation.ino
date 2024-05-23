@@ -3,7 +3,7 @@
 
 	(c) 2024 F.Lesage
 
-	1.0.x - Initial version.
+	1.0.0 - Initial version.
 	
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -19,17 +19,12 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <esp_task_wdt.h>
-// Keep these two to get rid of compile time errors because of incompatibilities between libraries
-#include <ESPAsyncWebSrv.h>
-#include "soc/rtc_wdt.h"
-
 #include "gpio_config.h"
 #include "common.h"
 #include "EcoStation.h"
 
-const etl::string<12>		REV					= "3.0.0";
-const unsigned long			US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
+const etl::string<12>		REV					= "1.0.0";
+const unsigned long			US_SLEEP			= 15 * 60 * 1000000;				// 15 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 EcoStation station;
@@ -52,11 +47,12 @@ void setup()
 		if ( station.get_station_data()->health.battery_level > 50 )
 			station.check_ota_updates( true );
 
+		esp_sleep_enable_timer_wakeup( US_SLEEP );
+		Serial.printf( "[CORE      ] [INFO ] Entering sleep mode.\n" );
+		esp_deep_sleep_start();
+
 	}
 
-	esp_sleep_enable_timer_wakeup( US_SLEEP );
-	Serial.printf( "[CORE      ] [INFO ] Entering sleep mode.\n" );
-	esp_deep_sleep_start();
 }
 
 void loop()

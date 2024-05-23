@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <FS.h>
+#include <SD.h>
+#include <SPI.h>
 #include <LittleFS.h>
 #include <charconv>
 #include <optional>
@@ -38,6 +40,7 @@
 #include "defaults.h"
 #include "gpio_config.h"
 #include "common.h"
+#include "AWSGPS.h"
 #include "sensor_manager.h"
 #include "config_manager.h"
 #include "config_server.h"
@@ -64,6 +67,7 @@ EcoStation::EcoStation( void )
 	station_data.health.current_heap_size = station_data.health.init_heap_size;
 	station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 	location = DEFAULT_LOCATION;
+	compact_data.format_version = COMPACT_DATA_FORMAT_VERSION;
 }
 
 void EcoStation::check_ota_updates( bool force_update = false )
@@ -103,6 +107,8 @@ void EcoStation::compute_uptime( void )
 		} else
 
 			station_data.health.uptime = now - boot_timestamp;
+
+		compact_data.uptime = station_data.health.uptime;
 	}
 }
 
@@ -133,39 +139,39 @@ void EcoStation::display_banner()
 	uint8_t	*wifi_mac = network.get_wifi_mac();
 	int		i;
 	bool	gpioext = config.get_has_device( aws_device_t::SC16IS750_DEVICE );
-	
-	Serial.printf( "\n#############################################################################################\n" );
-	Serial.printf( "# EcoStation                                                                                #\n" );
-	Serial.printf( "#  (c) lesage@loads.ch                                                                      #\n" );
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
-	Serial.printf( "# HARDWARE SETUP                                                                            #\n" );
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+
+	Serial.printf( "\n[STATION   ] [INFO ] #############################################################################################\n" );
+	Serial.printf( "[STATION   ] [INFO ] # EcoStation                                                                                #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #  (c) lesage@loads.ch                                                                      #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # HARDWARE SETUP                                                                            #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
 	print_config_string( "# Board              : %s", ota_setup.board.data() );
 	print_config_string( "# Model              : %s", ota_setup.config.data() );
 	print_config_string( "# WIFI Mac           : %s", ota_setup.device.data() );
+	print_config_string( "# LTE                : %s", "LTE" );
 	print_config_string( "# Firmware           : %s", ota_setup.version.data() );
 
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
-	Serial.printf( "# GPIO PIN CONFIGURATION                                                                    #\n" );
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # GPIO PIN CONFIGURATION                                                                    #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
 	if ( solar_panel ) {
 
 		print_config_string( "# 3.3V SWITCH   : %d", GPIO_ENABLE_3_3V );
-		print_config_string( "# 12V SWITCH    : %d", GPIO_ENABLE_5V );
 		print_config_string( "# BAT LVL       : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
 
 	}
 	print_config_string( "# DEBUG/CONFIG : %d", GPIO_DEBUG );
 
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
-	Serial.printf( "# RUNTIME CONFIGURATION                                                                     #\n" );
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # RUNTIME CONFIGURATION                                                                     #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
 	print_runtime_config();
 
-	Serial.printf( "#############################################################################################\n" );
+	Serial.printf( "[STATION   ] [INFO ] #############################################################################################\n" );
 }
 
 void EcoStation::enter_config_mode( void )
@@ -177,6 +183,32 @@ void EcoStation::enter_config_mode( void )
 		Serial.printf( "[STATION   ] [ERROR] Failed to start WiFi AP, cannot enter config mode.\n ");
 	else
 		while( true );
+}
+
+int16_t EcoStation::float_to_int16_encode( float v, float min, float max )
+{
+	if ( v < min )
+		v = min;
+	else if ( v > max )
+		v = max;
+
+	if ( debug_mode )
+		Serial.printf( "[STATION   ] [DEBUG] Encoding %f into 2 bytes int %d : 0x%04x\n",v, static_cast<int16_t>(v*100), static_cast<int16_t>(v*100) );
+
+	return static_cast<int16_t>( v * 100 );
+}
+
+int32_t EcoStation::float_to_int32_encode( float v, float min, float max )
+{
+	if ( v < min )
+		v = min;
+	else if ( v > max )
+		v = max;
+
+	if ( debug_mode )
+		Serial.printf("[STATION   ] [DEBUG] Encoding %f into 4 bytes int %d : 0x%08x\n",v, static_cast<int32_t>(v*100), static_cast<int32_t>(v*100) );
+
+	return static_cast<int32_t>( v * 100 );
 }
 
 template<typename... Args>
@@ -202,7 +234,7 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 	DynamicJsonDocument	json_data(860);
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
 	int					l;
-	
+
 	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
 	json_data["battery_level"] = station_data.health.battery_level;
 	json_data["timestamp"] = sensor_data->timestamp;
@@ -210,6 +242,7 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 	json_data["pressure"] = sensor_data->weather.pressure;
 	json_data["sl_pressure"] = sensor_data->weather.sl_pressure;
 	json_data["rh"] = sensor_data->weather.rh;
+	json_data["db"] = sensor_data->db;
 	json_data["ota_board"] = ota_setup.board.data();
 	json_data["ota_device"] = ota_setup.device.data();
 	json_data["ota_config"] = ota_setup.config.data();
@@ -247,9 +280,9 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 		return etl::string_view( "" );
 
 	}
-	l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	json_sensor_data_len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 	if ( debug_mode )
-		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", l, json_sensor_data.capacity() );
+		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", json_sensor_data_len, json_sensor_data.capacity() );
 
 	return etl::string_view( json_sensor_data );
 }
@@ -285,7 +318,7 @@ time_t EcoStation::get_timestamp( void )
 
 	if ( ntp_synced )
 		time( &now );
-	
+
 	return now;
 }
 
@@ -326,18 +359,20 @@ bool EcoStation::initialise( void )
 		snprintf( h, 3, "%02x", _byte );
 		station_data.firmware_sha56 += h;
     }
-	
+
 	Serial.printf( "\n\n[STATION   ] [INFO ] Firmware checksum = [%s]\n", station_data.firmware_sha56.data() );
 	Serial.printf( "[STATION   ] [INFO ] EcoStation [REV %s, BUILD %s] is booting...\n", REV.data(), BUILD_ID );
 
 	station_data.reset_reason = esp_reset_reason();
+	compact_data.reset_reason = station_data.reset_reason;
 
-	if ( !config.load( debug_mode ) )
+	if ( !config.load( station_data.firmware_sha56, debug_mode ) )
 		return false;
 
 	station_data.health.fs_free_space = config.get_fs_free_space();
+	compact_data.fs_free_space = station_data.health.fs_free_space;
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
-	
+
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
@@ -390,12 +425,16 @@ bool EcoStation::initialise( void )
 	if ( !startup_sanity_check() && config.can_rollback() )
 		return config.rollback();
 
+	if ( config.get_has_device( aws_device_t::GPS_SENSOR ) )
+		initialise_GPS();
+
 	display_banner();
 
-	if ( solar_panel )
-		sync_time( true );
+//	if ( solar_panel )
+//		sync_time( true );
+Serial.printf("not sync time\n");
 
-	if ( !sensor_manager.initialise( &config ))
+	if ( !sensor_manager.initialise( &config, &compact_data ))
 		return false;
 
 	if ( solar_panel )
@@ -411,6 +450,20 @@ bool EcoStation::initialise( void )
 
 	ready = true;
 	return true;
+}
+
+void EcoStation::initialise_GPS( void )
+{
+	if ( debug_mode )
+		Serial.printf( "[STATION   ] [DEBUG] Initialising GPS.\n" );
+
+	if ( !gps.initialise( &station_data.gps )) {
+
+			Serial.printf( "[STATION   ] [ERROR] GPS initialisation failed.\n" );
+			return;
+	}
+	gps.start();
+	gps.pilot_rtc( true );
 }
 
 void EcoStation::initialise_sensors( void )
@@ -485,7 +538,7 @@ const char *EcoStation::OTA_message( ota_status_t code )
 
 		case ota_status_t::UNKNOWN:
 			return "Undefined status";
-		
+
 	}
 	return "Unhandled OTA status code";
 }
@@ -499,7 +552,7 @@ void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
 	unsigned long	data_push_millis			= 0;
 	int				data_push_timer				= config.get_parameter<int>( "push_freq" );
 	bool			auto_ota_updates			= config.get_parameter<bool>( "automatic_updates" );
-	
+
 	if ( !config.get_parameter<bool>( "data_push" ))
 		data_push_timer = 0;
 
@@ -510,14 +563,14 @@ void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
 			station_data.health.current_heap_size =	xPortGetFreeHeapSize();
 			station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 			sync_time( false );
-			sync_time_millis = millis();			
+			sync_time_millis = millis();
 		}
 
 		if ( force_ota_update || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
 
 			force_ota_update = false;
 			check_ota_updates( true );
-			ota_millis = millis();			
+			ota_millis = millis();
 		}
 
 		if ( data_push_timer && (( millis() - data_push_millis ) > 1000*data_push_timer )) {
@@ -532,6 +585,9 @@ void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
 
 bool EcoStation::poll_sensors( void )
 {
+	if ( config.get_has_device( aws_device_t::GPS_SENSOR ) )
+		read_GPS();
+
 	return sensor_manager.poll_sensors();
 }
 
@@ -552,12 +608,12 @@ void EcoStation::print_config_string( const char *fmt, Args... args )
 		string.append( string.capacity() - l - 4, ' ' );
 		string.append( "#\n" );
 	}
-	Serial.printf( "%s", string.data() );
+	Serial.printf( "[STATION   ] [INFO ] %s", string.data() );
 }
 
 void EcoStation::print_runtime_config( void )
 {
- 	std::array<char,97>	string;
+ 	std::array<char,108>	string;
 	const char			*root_ca = config.get_root_ca().data();
 	int					ca_pos = 0;
 
@@ -574,7 +630,7 @@ void EcoStation::print_runtime_config( void )
 	print_config_string( "# TZNAME       : %s", config.get_parameter<const char *>( "tzname" ));
 
 	memset( string.data(), 0, string.size() );
-	int str_len = snprintf( string.data(), string.size() - 1, "# ROOT CA      : " );
+	int str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # ROOT CA      : " );
 
 	int ca_len = config.get_root_ca().size();
 
@@ -583,14 +639,14 @@ void EcoStation::print_runtime_config( void )
 		ca_pos = reformat_ca_root_line( string, str_len, ca_pos, ca_len, root_ca );
 		Serial.printf( "%s", string.data() );
 		memset( string.data(), 0, string.size() );
-		str_len = snprintf( string.data(), string.size() - 1, "# " );
+		str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # " );
 	}
 
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
-	Serial.printf( "# SENSORS & CONTROLS                                                                        #\n" );
-	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # SENSORS & CONTROLS                                                                        #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
-	print_config_string( "# SQM/IRRANDIANCE  : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# SQM/IRRADIANCE   : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( aws_device_t::MLX_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( aws_device_t::BME_SENSOR ) ? "Yes" : "No" );
 
@@ -605,9 +661,6 @@ void EcoStation::read_battery_level( void )
 
 	WiFi.mode ( WIFI_OFF );
 
-	if ( debug_mode )
-		Serial.print( "[STATION   ] [DEBUG] Battery level: " );
-
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
 	delay( 500 );
 
@@ -617,9 +670,11 @@ void EcoStation::read_battery_level( void )
 	}
 	adc_value = adc_value / 5;
 	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
+	compact_data.battery_level = float_to_int16_encode( station_data.health.battery_level, 0, 100 );
 
 	if ( debug_mode ) {
 
+		Serial.print( "[STATION   ] [DEBUG] Battery level: " );
 		float adc_v_in = adc_value * VCC / ADC_V_MAX;
 		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
 		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", station_data.health.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
@@ -628,22 +683,41 @@ void EcoStation::read_battery_level( void )
 	digitalWrite( GPIO_BAT_ADC_EN, LOW );
 }
 
-int EcoStation::reformat_ca_root_line( std::array<char,97> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
+void EcoStation::read_GPS( void )
+{
+	if ( station_data.gps.fix ) {
+
+		if ( debug_mode ) {
+
+			// flawfinder: ignore
+			etl::string<32> buf;
+			struct tm dummy;
+			strftime( buf.data(), buf.capacity(), "%Y-%m-%d %H:%M:%S", localtime_r( &station_data.gps.time.tv_sec, &dummy ) );
+			Serial.printf( "[STATION] [DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", station_data.gps.latitude, station_data.gps.longitude, station_data.gps.altitude, buf.data() );
+		}
+
+	} else
+
+		if ( debug_mode )
+			Serial.printf( "[STATION] [DEBUG] NO GPS FIX.\n" );
+}
+
+int EcoStation::reformat_ca_root_line( std::array<char,108> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
 {
 	int string_pos;
 
-	strlcat( string.data(), root_ca + ca_pos, 92 );
-	for( string_pos = str_len; string_pos < 92; string_pos++ ) {
+	strlcat( string.data(), root_ca + ca_pos, 103 );
+	for( string_pos = str_len; string_pos < 103; string_pos++ ) {
 
 		if ( string[ string_pos ] == '\n' ) {
 
-			if (( ca_pos < 92 ) || (( ca_len - ca_pos) < 92))
+			if (( ca_pos < 103 ) || (( ca_len - ca_pos) < 103))
 
 				string[ string_pos ] = ' ';
 
 			else {
 
-				memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 96 - string_pos - 3 );
+				memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 107 - string_pos - 3 );
 				ca_pos++;
 
 			}
@@ -653,8 +727,8 @@ int EcoStation::reformat_ca_root_line( std::array<char,97> &string, int str_len,
 			break;
 	}
 	ca_pos--;
-	for( int j = string_pos; j < 92; string[ j ] = ' ', j++ );
-	memset( string.data() + 91, 0, 6 );
+	for( int j = string_pos; j < 103; string[ j ] = ' ', j++ );
+	memset( string.data() + 102, 0, 6 );
 	strlcat( string.data(), " #\n", string.size() - 1 );
 	return ca_pos;
 }
@@ -673,8 +747,7 @@ void EcoStation::read_sensors( void )
 			send_alarm( "Low battery", string.data() );
 
 		low_battery_event_count++;
-		if ( debug_mode )
-			Serial.printf( "[DEBUG] %s", string.data() );
+		Serial.printf( "[CORE      ] [INFO ] %s", string.data() );
 	}
 }
 
@@ -733,14 +806,30 @@ void EcoStation::send_backlog_data( void )
 	etl::string<1024> line;
 	bool	empty = true;
 
-	// Issue #154
-return;
-	LittleFS.begin( FORMAT_LITTLEFS_IF_FAILED );
+	if ( !SD.begin() ) {
+		
+		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
+		return;
+	}
 
+	if ( !SD.exists( "/unsent.txt" )) {
+
+		Serial.printf( "[STATION   ] [INFO ] No backlog file.\n" );
+		return;
+		
+	}
 	// flawfinder: ignore
-	File backlog = LittleFS.open( "/unsent.txt", FILE_READ );
-
+	File backlog = SD.open( "/unsent.txt", FILE_READ );
+	
 	if ( !backlog ) {
+
+		Serial.printf( "[STATION   ] [ERROR] Cannot open backlog file.\n" );
+		return;
+	}
+	
+	if ( !backlog.size() ) {
+
+		backlog.close();
 
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
@@ -748,7 +837,7 @@ return;
 	}
 
 	// flawfinder: ignore
-	File new_backlog = LittleFS.open( "/unsent.new", FILE_WRITE );
+	File new_backlog = SD.open( "/unsent.new", FILE_WRITE );
 
 	while ( backlog.available() ) {
 
@@ -771,14 +860,15 @@ return;
 
 	if ( !empty ) {
 
-		LittleFS.rename( "/unsent.new", "/unsent.txt" );
+		SD.remove( "/unsent.txt" );
+		SD.rename( "/unsent.new", "/unsent.txt" );
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
 
 	} else {
 
-		LittleFS.remove( "/unsent.txt" );
-		LittleFS.remove( "/unsent.new" );
+		SD.remove( "/unsent.txt" );
+		SD.remove( "/unsent.new" );
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Data backlog is empty.\n");
 	}
@@ -786,6 +876,8 @@ return;
 
 void EcoStation::send_data( void )
 {
+	bool lora_data_sent = false;
+
 	if ( !solar_panel ) {
 
 		while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE )
@@ -796,14 +888,20 @@ void EcoStation::send_data( void )
 	}
 
 	get_json_sensor_data();
-
 	if ( debug_mode )
     	Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
+	sensor_manager.encode_sensor_data();
+	
+	// FIXME: make it config dependent
+	// network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
 
 	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() ))
 		send_backlog_data();
 	else
-		store_unsent_data( json_sensor_data );
+		store_unsent_data( etl::string_view( json_sensor_data ));
+
+
+	digitalWrite( GPIO_ENABLE_3_3V, LOW );
 
 	if ( !solar_panel )
 		xSemaphoreGive( sensors_read_mutex );
@@ -831,30 +929,45 @@ bool EcoStation::startup_sanity_check( void )
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
 	bool ok;
+	if ( !SD.begin() ) {
 
-	// Issue #154
-	return false;
-	LittleFS.begin( FORMAT_LITTLEFS_IF_FAILED );
+		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
+		return false;
+	}
 
-	// flawfinder: ignore
-	File backlog = LittleFS.open( "/unsent.txt", FILE_WRITE );
-
+	File backlog = SD.open( "/unsent.txt", FILE_APPEND );
 	if ( !backlog ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot store data until server is available.\n" );
 		return false;
 	}
 
-	if (( ok = ( backlog.printf( "%s\n", data.data() ) == ( data.size() + 1 )) )) {
+
+	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + json_sensor_data_len )) )) {
 
 		if ( debug_mode )
-			Serial.printf( "[STATION   ] [DEBUG] Ok, data secured for when server is available. data=%s\n", data.data() );
+			Serial.printf( "[STATION   ] [DEBUG] Ok, data saved for when the server is available. data=[%s]\n", data.data() );
 
 	} else
 
-		Serial.printf( "[STATION   ] [ERROR] Could not write data.\n" );
-
+		Serial.printf( "[STATION   ] [ERROR] Could not save data.\n" );
 	backlog.close();
+
+    File file = SD.open( "/unsent.txt");
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return ok;
+    }
+
+    Serial.print("Read from file: ");
+    while(file.available()){
+        Serial.write(file.read());
+    }
+
+    
+    file.close();
+
+    
 	return ok;
 }
 

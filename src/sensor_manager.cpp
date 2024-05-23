@@ -35,7 +35,15 @@ RTC_DATA_ATTR long	prev_available_sensors = 0;	// NOSONAR
 RTC_DATA_ATTR long	available_sensors = 0;		// NOSONAR
 
 SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
-const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR | aws_device_t::TSL_SENSOR | aws_device_t::BME_SENSOR | aws_device_t::WIND_VANE_SENSOR | aws_device_t::ANEMOMETER_SENSOR | aws_device_t::RAIN_SENSOR | aws_device_t::GPS_SENSOR );
+const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR |
+									aws_device_t::TSL_SENSOR |
+									aws_device_t::BME_SENSOR |
+									aws_device_t::WIND_VANE_SENSOR |
+									aws_device_t::ANEMOMETER_SENSOR |
+									aws_device_t::RAIN_SENSOR |
+									aws_device_t::GPS_SENSOR |
+									aws_device_t::DBMETER_SENSOR );
+
 const std::array<etl::string_view,3> CLOUD_COVERAGE_STR = { etl::string_view( "Clear" ), etl::string_view( "Cloudy" ), etl::string_view( "Overcast" ) };
 
 extern EcoStation station;
@@ -84,6 +92,7 @@ AWSSensorManager::AWSSensorManager( void ) :
 	bme( new Adafruit_BME280() ),
 	mlx( new Adafruit_MLX90614() ),
 	tsl( new Adafruit_TSL2591( 2591 )),
+	spl( new dbmeter() ),
 	i2c_mutex( xSemaphoreCreateMutex() )
 {
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
@@ -109,9 +118,11 @@ sensor_data_t *AWSSensorManager::get_sensor_data( void )
 	return &sensor_data;
 }
 
-bool AWSSensorManager::initialise( AWSConfig *_config )
+bool AWSSensorManager::initialise( AWSConfig *_config, compact_data_t *_compact_data )
 {
 	config = _config;
+	compact_data = _compact_data;
+
 	initialise_sensors();
 
 	if ( !solar_panel ) {
@@ -134,6 +145,20 @@ bool AWSSensorManager::initialise( AWSConfig *_config )
 
 	initialised = true;
 	return true;
+}
+
+void AWSSensorManager::initialise_dbmeter( void )
+{
+	if ( !spl->begin() )
+		Serial.printf( "[SENSORMNGR] [ERROR] Could not find DBMETER.\n" );
+
+	else {
+
+		if ( debug_mode )
+			Serial.printf( "[SENSORMNGR] [INFO ] Found DBMETER.\n" );
+
+		available_sensors |= aws_device_t::DBMETER_SENSOR;
+	}
 }
 
 void AWSSensorManager::initialise_BME( void )
@@ -171,9 +196,7 @@ void AWSSensorManager::initialise_sensors( void )
 	if ( solar_panel ) {
 
 		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
-		pinMode( GPIO_ENABLE_5V, OUTPUT );
 		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
-		digitalWrite( GPIO_ENABLE_5V, HIGH );
 
 		delay( 500 );		// MLX96014 seems to take some time to properly initialise
 	}
@@ -189,6 +212,8 @@ void AWSSensorManager::initialise_sensors( void )
 		initialise_TSL();
 		sqm.initialise( tsl, &sensor_data.sqm, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
 	}
+
+	initialise_dbmeter();
 }
 
 void AWSSensorManager::initialise_TSL( void )
@@ -232,6 +257,18 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 		}
 		delay( polling_ms_interval );
 	}
+}
+
+void AWSSensorManager::read_dbmeter( void  )
+{
+	if ( ( available_sensors & aws_device_t::DBMETER_SENSOR ) == aws_device_t::DBMETER_SENSOR ) {
+
+		sensor_data.db = spl->read();
+		if ( debug_mode )
+			Serial.printf( "[SENSORMNGR] [DEBUG] SPL = %ddB\n", sensor_data.db  );
+		return;
+	}
+	sensor_data.db = 0;
 }
 
 void AWSSensorManager::read_BME( void  )
@@ -317,9 +354,8 @@ void AWSSensorManager::read_sensors( void )
 {
 	retrieve_sensor_data();
 
-	digitalWrite( GPIO_ENABLE_3_3V, LOW );
-	digitalWrite( GPIO_ENABLE_5V, LOW );
-	
+//	digitalWrite( GPIO_ENABLE_5V, LOW );		// Do not shut down 3.3V as SDCard needs it
+
 	if ( prev_available_sensors != available_sensors ) {
 
 		prev_available_sensors = static_cast<unsigned long>( available_sensors );
@@ -347,6 +383,34 @@ void AWSSensorManager::read_TSL( void )
 	sensor_data.sun.irradiance = ( lux == -1 ) ? 0 : lux * LUX_TO_IRRADIANCE_FACTOR;
 }
 
+void AWSSensorManager::encode_sensor_data( void )
+{
+	if ( debug_mode )
+		Serial.printf( "[SENSORMNGR] [DEBUG] Compact sensor data format version: %02x\n", compact_data->format_version );
+
+	compact_data->timestamp = sensor_data.timestamp;
+
+	compact_data->lux = station.float_to_int32_encode( sensor_data.sun.lux, 0, 80000 );
+	compact_data->irradiance = station.float_to_int16_encode( sensor_data.sun.irradiance, 0, 1000 );
+
+	compact_data->temperature = station.float_to_int16_encode( sensor_data.weather.temperature, -40, 50 );
+	compact_data->pressure = station.float_to_int32_encode( sensor_data.weather.pressure, 700, 1050 );
+	compact_data->rh = station.float_to_int16_encode( sensor_data.weather.rh, 0, 100 );
+
+	compact_data->ambient_temperature = station.float_to_int16_encode( sensor_data.weather.ambient_temperature, -40, 50 );
+	compact_data->raw_sky_temperature = station.float_to_int16_encode( sensor_data.weather.raw_sky_temperature, -100, 50 );
+	compact_data->sky_temperature = station.float_to_int16_encode( sensor_data.weather.sky_temperature, -100, 50 );
+	compact_data->cloud_cover = station.float_to_int16_encode( sensor_data.weather.cloud_cover, -100, 50 );
+	compact_data->cloud_coverage = sensor_data.weather.cloud_coverage;
+
+	compact_data->msas = station.float_to_int16_encode( sensor_data.sqm.msas, 0, 30);
+	compact_data->nelm = station.float_to_int16_encode( sensor_data.sqm.nelm, -15, 10 );
+
+	compact_data->db = sensor_data.db;
+
+	compact_data->available_sensors = sensor_data.available_sensors;
+}
+
 void AWSSensorManager::retrieve_sensor_data( void )
 {
 	if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
@@ -372,6 +436,10 @@ void AWSSensorManager::retrieve_sensor_data( void )
 
 		esp_task_wdt_reset();
 
+		read_dbmeter();
+
+		esp_task_wdt_reset();
+
 		xSemaphoreGive( i2c_mutex );
 
 	}
@@ -385,7 +453,7 @@ void AWSSensorManager::set_debug_mode( bool b )
 void AWSSensorManager::set_solar_panel( bool b )
 {
 	solar_panel = b;
-	
+
 	if ( solar_panel ) {
 
 		pinMode( GPIO_BAT_ADC_EN, OUTPUT );

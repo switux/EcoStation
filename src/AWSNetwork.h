@@ -22,12 +22,16 @@
 #define _AWSNetwork_h
 
 #include <ESPping.h>
+#include "lorawan.h"
+
+#include "lorawan_setup.h"
 
 class AWSNetwork {
 
 	private:
 
 		AWSConfig			*config;
+		AWSLoraWAN			*lorawan;
 		aws_iface			current_pref_iface;
 		aws_wifi_mode		current_wifi_mode;
 		bool				debug_mode;
@@ -54,6 +58,7 @@ class AWSNetwork {
 		bool		initialise_wifi( void );
 		byte		mask_to_cidr( uint32_t );
 		bool		post_content( const char *, size_t, const char * );
+		void		send_raw_data( uint8_t *, uint8_t );
 		bool		start_hotspot( void );
 
 };

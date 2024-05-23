@@ -38,6 +38,7 @@ AWSNetwork::AWSNetwork( void )
 	current_wifi_mode = aws_wifi_mode::sta;
 	current_pref_iface = aws_iface::wifi_sta;
 	memset( wifi_mac, 0, 6 );
+	lorawan = new AWSLoraWAN( APPSKEY, NWKSKEY, DEVADDR );
 }
 
 IPAddress AWSNetwork::cidr_to_mask( byte cidr )
@@ -124,6 +125,8 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
+	lorawan->begin( _debug_mode );
+	
 	return initialise_wifi();
 }
 
@@ -245,6 +248,11 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 		Serial.printf( "[NETWORK   ] [DEBUG] Connecting to server [%s:443] ...", remote_server );
 
 	return wifi_post_content( remote_server, final_endpoint, jsonString );
+}
+
+void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
+{
+	lorawan->send_data( buffer, len );	
 }
 
 bool AWSNetwork::start_hotspot( void )

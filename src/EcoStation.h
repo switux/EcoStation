@@ -53,7 +53,7 @@ enum struct aws_ip_info : uint8_t
 using aws_ip_info_t = aws_ip_info;
 
 struct ota_setup_t {
-	
+
 	etl::string<24>	board;
 	etl::string<32>	config;
 	etl::string<18>	device;
@@ -71,9 +71,12 @@ class EcoStation {
 
 		TaskHandle_t				aws_periodic_task_handle;
 		bool						force_ota_update			= false;
+		compact_data_t				compact_data;
 		AWSConfig					config;
 		bool						debug_mode					= false;
+		AWSGPS						gps;
 		etl::string<1096>			json_sensor_data;
+		size_t						json_sensor_data_len;
 		etl::string<128>			location;
 		AWSNetwork					network;
 		bool						ntp_synced					= false;
@@ -84,7 +87,7 @@ class EcoStation {
 		AWSWebServer 				server;
 		bool						solar_panel;
 		station_data_t				station_data;
-		
+
 		IPAddress		cidr_to_mask( byte );
 		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
@@ -103,7 +106,7 @@ class EcoStation {
 		void			print_config_string( const char *, Args... );
 		void			print_runtime_config( void );
 		void			read_battery_level( void );
-		int				reformat_ca_root_line( std::array<char,97> &, int, int, int, const char * );
+		int				reformat_ca_root_line( std::array<char,108> &, int, int, int, const char * );
 		void			send_backlog_data( void );
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
@@ -115,6 +118,8 @@ class EcoStation {
 
 							EcoStation( void );
 		void				check_ota_updates( bool );
+		int16_t			float_to_int16_encode( float, float, float );
+		int32_t			float_to_int32_encode( float, float, float );
 		bool				get_debug_mode( void );
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );
@@ -128,12 +133,14 @@ class EcoStation {
 		uint32_t			get_uptime( void );
 		bool				has_device( aws_device_t );
 		bool				initialise( void );
+		void				initialise_GPS( void );
 		void				initialise_sensors( void );
 		bool				is_sensor_initialised( aws_device_t );
 		bool				is_ready( void );
 		bool				is_ntp_synced( void );
 		bool				on_solar_panel();
 		bool				poll_sensors( void );
+		void				read_GPS( void );
 		void				reboot( void );
 		void				read_sensors( void );
 		void				report_unavailable_sensors( void );

@@ -99,7 +99,7 @@ void AWSConfig::list_files( void )
 	close( root );
 }
 
-bool AWSConfig::load( bool _debug_mode  )
+bool AWSConfig::load( etl::string<64> &firmware_sha256, bool _debug_mode  )
 {
 	debug_mode = _debug_mode;
 
@@ -114,12 +114,12 @@ bool AWSConfig::load( bool _debug_mode  )
 
 	update_fs_free_space();
 
-	return read_config();
+	return read_config( firmware_sha256 );
 }
 
-bool AWSConfig::read_config( void )
+bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 {
-	read_hw_info_from_nvs();
+	read_hw_info_from_nvs( firmware_sha256 );
 
 	read_root_ca();
 
@@ -136,6 +136,7 @@ bool AWSConfig::read_config( void )
 	devices |= aws_device_t::BME_SENSOR * ( json_config->containsKey( "has_bme" ) ? (*json_config)["has_bme"].as<int>() : DEFAULT_HAS_BME );
 	devices |= aws_device_t::MLX_SENSOR * ( json_config->containsKey( "has_mlx" ) ? (*json_config)["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
 	devices |= aws_device_t::TSL_SENSOR * ( json_config->containsKey( "has_tsl" ) ? (*json_config)["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
+	devices |= aws_device_t::GPS_SENSOR * ( json_config->containsKey( "has_gps" ) ? (*json_config)["has_gps"].as<int>() : DEFAULT_HAS_GPS );
 
 	set_missing_parameters_to_default_values();
 
@@ -144,8 +145,11 @@ bool AWSConfig::read_config( void )
 
 void AWSConfig::read_root_ca( void )
 {
-	File 	file = LittleFS.open( "/root_ca.txt", FILE_READ );
+	File 	file;
 	int		s;
+
+	if ( LittleFS.exists( "/root_ca.txt" ) )
+		file = LittleFS.open( "/root_ca.txt", FILE_READ );
 
 	if ( !file ) {
 
@@ -218,15 +222,18 @@ bool AWSConfig::read_file( const char *filename )
 	return false;
 }
 
-bool AWSConfig::read_hw_info_from_nvs( void )
+bool AWSConfig::read_hw_info_from_nvs( etl::string<64> &firmware_sha56 )
 {
 	Preferences nvs;
 	char		x;
 
 	Serial.printf( "[CONFIGMNGR] [INFO ] Reading NVS values.\n" );
 
-	nvs.begin( "fimware", true );
-	nvs.getString( "sha256", ota_sha256.data(), ota_sha256.capacity() );
+	nvs.begin( "firmware", false );
+		
+	if ( !nvs.getString( "sha256", ota_sha256.data(), ota_sha256.capacity() ))
+		nvs.putString( "sha256", firmware_sha56.data() );
+
 	nvs.end();
 
 	nvs.begin( "aws", true );
@@ -236,12 +243,20 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
+/*	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
 
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get Power Mode from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
+*/
+	if ( ( x = nvs.getChar( "has_lte", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get has_lte from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LTE_DEVICE;
 	nvs.end();
 	return true;
 }
@@ -523,6 +538,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "automatic_updates" ):
 			case str2int( "data_push" ):
 			case str2int( "has_bme" ):
+			case str2int( "has_gps" ):
 			case str2int( "has_mlx" ):
 			case str2int( "has_tsl" ):
 				proposed_config[ item.key().c_str() ] = 1;

@@ -28,6 +28,7 @@
 #include <ArduinoJson.h>
 
 #include "defaults.h"
+#include "dbmeter.h"
 #include "config_manager.h"
 #include "SQM.h"
 #include "device.h"
@@ -47,51 +48,56 @@ class AWSSensorManager {
 
   private:
 
-    Adafruit_BME280		*bme				= nullptr;
-    Adafruit_MLX90614	*mlx				= nullptr;
-    Adafruit_TSL2591	*tsl				= nullptr;
-    SQM					sqm;
+	Adafruit_BME280		*bme				= nullptr;
+	Adafruit_MLX90614	*mlx				= nullptr;
+	Adafruit_TSL2591	*tsl				= nullptr;
+	dbmeter				*spl				= nullptr;
+	SQM					sqm;
 	std::array<int,7>	k;
 	AWSConfig 			*config				= nullptr;
 
-    aws_device_t		available_sensors	= aws_device_t::NO_SENSOR;
-    sensor_data_t		sensor_data;
-    bool				debug_mode			= false;
-    bool				initialised			= false;
-	bool				solar_panel			= false;
-    TaskHandle_t		sensors_task_handle;
-    SemaphoreHandle_t	i2c_mutex			= nullptr;
-   	uint32_t			polling_ms_interval	= DEFAULT_SENSOR_POLLING_MS_INTERVAL;
+	aws_device_t			available_sensors	= aws_device_t::NO_SENSOR;
+	compact_data_t			*compact_data;
+	sensor_data_t			sensor_data;
+	bool					debug_mode			= false;
+	bool					initialised			= false;
+	bool					solar_panel			= false;
+	TaskHandle_t			sensors_task_handle;
+	SemaphoreHandle_t		i2c_mutex			= nullptr;
+	uint32_t				polling_ms_interval	= DEFAULT_SENSOR_POLLING_MS_INTERVAL;
 
   public:
-    					AWSSensorManager( void );
-    bool				begin( void );
-    aws_device_t		get_available_sensors( void );
-    bool				get_debug_mode( void );
-    SemaphoreHandle_t	get_i2c_mutex( void );
-    sensor_data_t		*get_sensor_data( void );
-    bool				initialise( AWSConfig * );
-    void				initialise_sensors( void );
-    bool				poll_sensors( void );
-    void				read_sensors( void );
-	void				resume( void );
-	bool				sensor_is_available( aws_device_t );
-    void				set_debug_mode( bool );
-	void				set_solar_panel( bool );
-	void				suspend( void );
+    						AWSSensorManager( void );
+    bool					begin( void );
+    aws_device_t			get_available_sensors( void );
+    bool					get_debug_mode( void );
+    SemaphoreHandle_t		get_i2c_mutex( void );
+    sensor_data_t			*get_sensor_data( void );
+    bool					initialise( AWSConfig *, compact_data_t * );
+    void					initialise_sensors( void );
+    bool					poll_sensors( void );
+    void					read_sensors( void );
+	void					resume( void );
+	bool					sensor_is_available( aws_device_t );
+    void					set_debug_mode( bool );
+	void					set_solar_panel( bool );
+    void					encode_sensor_data( void );
+	void					suspend( void );
 
   private:
 
 bool sync_time( void );
 
-    void initialise_BME( void );
-    void initialise_MLX( void );
-    void initialise_TSL( void );
-    void poll_sensors_task( void * );
-    void read_BME( void );
-    void read_MLX( void );
-    void read_TSL( void );
-    void retrieve_sensor_data( void );
+	void	initialise_dbmeter( void );
+    void	initialise_BME( void );
+    void	initialise_MLX( void );
+    void	initialise_TSL( void );
+    void	poll_sensors_task( void * );
+    void	read_dbmeter( void );
+    void	read_BME( void );
+    void	read_MLX( void );
+    void	read_TSL( void );
+    void	retrieve_sensor_data( void );
 };
 
 #endif

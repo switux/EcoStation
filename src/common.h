@@ -27,14 +27,16 @@
 #include "etl/string_utilities.h"
 
 #include "build_id.h"
+#include "AWSGPS.h"
 
 // Force DEBUG output even if not activated by external button
 const byte DEBUG_MODE = 1;
 
+#define COMPACT_DATA_FORMAT_VERSION	0x01
+
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
 extern HardwareSerial			Serial1;
-
 
 enum class aws_device_t : unsigned long {
 	NO_SENSOR			= 0x00000000,
@@ -47,7 +49,9 @@ enum class aws_device_t : unsigned long {
 	GPS_SENSOR			= 0x00000040,
 	DOME_DEVICE			= 0x00000080,
 	ETHERNET_DEVICE		= 0x00000100,
-	SC16IS750_DEVICE	= 0x00000200
+	SC16IS750_DEVICE	= 0x00000200,
+	LTE_DEVICE			= 0x00000400,
+	DBMETER_SENSOR		= 0x00000800
 };
 
 extern aws_device_t	operator&( aws_device_t, aws_device_t );
@@ -97,14 +101,12 @@ struct weather_data_t {
 	float	sky_temperature;
 	float	cloud_cover;
 	uint8_t	cloud_coverage;
-
 };
 
 struct sun_data_t {
 
 	int		lux;
 	float	irradiance;
-	
 };
 
 struct sensor_data_t {
@@ -113,17 +115,53 @@ struct sensor_data_t {
 	sun_data_t		sun;
 	weather_data_t	weather;
 	sqm_data_t		sqm;
+	uint8_t			db;
 	aws_device_t	available_sensors;
 
 };
 
 struct station_data_t {
 
-	health_data_t	health;
+	gps_data_t		gps;
+	health_data_t	health;				// 6 bytes
 	struct timeval	ntp_time;
-	int				reset_reason;
+	int				reset_reason;		// 2 bytes int
 	etl::string<64>	firmware_sha56;
 };
+
+struct compact_data_t {
+
+	uint8_t			format_version;		// Because of alignment made by the compiler,
+										// any change in the data may lead to a different byte arrangement
+										// that needs to be taken into account for decoding
+	time_t			timestamp;
+
+	int32_t			lux;
+	int16_t			irradiance;
+
+	int16_t			temperature;
+	int32_t			pressure;
+	int16_t			rh;
+
+	int16_t			ambient_temperature;
+	int16_t			raw_sky_temperature;
+	int16_t			sky_temperature;
+	int16_t			cloud_cover;
+	uint8_t			cloud_coverage;
+
+	int16_t			msas;
+	int16_t			nelm;
+
+	uint8_t			db;
+
+	aws_device_t	available_sensors;
+
+    int16_t			battery_level;
+    uint32_t		uptime;
+    uint32_t		fs_free_space;
+
+	int				reset_reason;
+} __attribute__ ((packed));
 
 void loop( void );
 void setup( void );

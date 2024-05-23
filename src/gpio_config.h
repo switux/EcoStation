@@ -29,23 +29,30 @@
 #define GPIO_DEBUG		GPIO_NUM_34
 
 // MOSFET SWITCHES
-#define GPIO_ENABLE_3_3V		GPIO_NUM_33
-#define GPIO_ENABLE_5V			GPIO_NUM_26
-#define GPIO_ENABLE_LTE			GPIO_NUM_32
+#define GPIO_ENABLE_3_3V		GPIO_NUM_32
 
 // Battery level
-#define GPIO_BAT_ADC			GPIO_NUM_13
-#define GPIO_BAT_ADC_EN			GPIO_NUM_25
+#define GPIO_BAT_ADC			GPIO_NUM_33
+#define GPIO_BAT_ADC_EN			GPIO_NUM_35
 
 // SD Card reader
-#define	GPIO_SPI_MOSI			GPIO_NUM_23
-#define	GPIO_SPI_MISO			GPIO_NUM_19
-#define	GPIO_SPI_SCK			GPIO_NUM_18
-#define	GPIO_SPI_CS				GPIO_NUM_5
-#define	GPIO_SPI_INT			GPIO_NUM_4
+#define	GPIO_SD_MOSI			GPIO_NUM_23	// Module MOSI pin
+#define	GPIO_SD_MISO			GPIO_NUM_19	// Module MISO pin
+#define	GPIO_SD_SCK				GPIO_NUM_18
+#define	GPIO_SD_CS				GPIO_NUM_5
 
-// LTE
-#define	LTE_RX					GPIO_NUM_17
-#define	LTE_TX					GPIO_NUM_16
+// LoRa RFM95
+#define	GPIO_LORA_MOSI			GPIO_NUM_23	// Module MOSI pin
+#define	GPIO_LORA_MISO			GPIO_NUM_19	// Module MISO pin
+#define	GPIO_LORA_SCK			GPIO_NUM_18
+#define	GPIO_LORA_CS			GPIO_NUM_25
+#define	GPIO_LORA_RST			GPIO_NUM_13
+#define	GPIO_LORA_DIO0			GPIO_NUM_14
+#define	GPIO_LORA_DIO1			GPIO_NUM_27
+#define	GPIO_LORA_DIO2			GPIO_NUM_26
+
+// GPS
+#define	GPS_RX					GPIO_NUM_17	// Module TX pin
+#define	GPS_TX					GPIO_NUM_16	// Module RX pin
 
 #endif
