@@ -20,15 +20,17 @@
 #include "gpio_config.h"
 #include "lorawan.h"
 
-// FIXME: get pin def from config
 const lmic_pinmap lmic_pins = {
-  .nss = GPIO_LORA_CS,
+  .nss	= GPIO_LORA_CS,
   .rxtx = LMIC_UNUSED_PIN,
-  .rst = GPIO_LORA_RST,
-  .dio = { GPIO_LORA_DIO0, GPIO_LORA_DIO1, GPIO_LORA_DIO2 },
+  .rst	= GPIO_LORA_RST,
+  .dio	= { GPIO_LORA_DIO0, GPIO_LORA_DIO1, GPIO_LORA_DIO2 },
 };
 
 const unsigned TX_INTERVAL = 60;
+extern unsigned long			US_SLEEP;
+
+RTC_DATA_ATTR uint32_t fcnt = 0;
 
 // Only for OTAA
 void os_getArtEui (u1_t* buf) { }
@@ -60,7 +62,13 @@ bool AWSLoraWAN::begin( bool _debug_mode )
 	LMIC_setLinkCheckMode( 1 );
 	LMIC.dn2Dr = DR_SF9;
 	LMIC_setDrTxpow( DR_SF7, 14 );
+	LMIC.seqnoUp = fcnt;
 	return true;
+}
+
+void AWSLoraWAN::prepare_for_deep_sleep( void )
+{
+    fcnt = LMIC.seqnoUp;
 }
 
 void AWSLoraWAN::send( osjob_t *job )
@@ -72,7 +80,9 @@ void AWSLoraWAN::send( osjob_t *job )
 
 	} else {
 
-		LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata), mylen, 1 );
+		LMIC.seqnoUp++;
+		Serial.printf("LORA SEQ #%d\n",LMIC.seqnoUp);
+		LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata), mylen, 0 );
 		if ( debug_mode ) {
 
 			Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", mylen );
@@ -82,25 +92,19 @@ void AWSLoraWAN::send( osjob_t *job )
 		}
 
 		unsigned long	start			= millis();
-		bool			message_acked	= false;
+		bool			message_sent	= false;
 
-		while (( !message_acked ) && (( millis() - start ) < 30000 )) {
+		while (( !message_sent ) && (( millis() - start ) < 10000 )) {
 
 			os_runloop_once();
 
-			if ( LMIC.opmode & OP_TXRXPEND ) {
-
-				if (( message_acked = (( LMIC.txrxFlags & TXRX_ACK ) ==  TXRX_ACK ))) {
-
-					if ( debug_mode )
-						Serial.printf( "[LORAWAN   ] [DEBUG] Message has been acknowledged\n" );
-
-					LMIC.txrxFlags &= ~TXRX_ACK;
-				}
-			} else
+			if ( ( LMIC.opmode & OP_TXRXPEND ))
 				delay( 100 );
-
+			else
+				message_sent = true;
 		}
+		if ( message_sent )
+			Serial.printf( "[LORAWAN   ] [DEBUG] Packet sent\n"  );
 	}
 }
 

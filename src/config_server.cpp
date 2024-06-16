@@ -23,6 +23,7 @@
 #include <SSLClient.h>
 #include <ESPAsyncWebSrv.h>
 #include <FS.h>
+#include <SD.h>
 #include <LittleFS.h>
 
 #include "AsyncJson.h"
@@ -62,7 +63,7 @@ void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 		request->send( 503, "text/plain", "Station is not ready yet" );
 		return;
 	}
-	
+
 	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE ) { esp_task_wdt_reset(); }
 		if ( debug_mode )
 			Serial.printf( "[WEBSERVER ] [DEBUG] Waiting for sensor data update to complete.\n" );
@@ -84,7 +85,7 @@ void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 	int				minutes	= floor( fmod( uptime, 3600 ) / 60 );
 	int				seconds	= fmod( uptime, 60 );
 	etl::string<16>	str;
-	
+
 	snprintf( str.data(), str.capacity(), "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds );
 	request->send( 200, "text/plain", str.data() );
 }
@@ -98,7 +99,7 @@ void AWSWebServer::index( AsyncWebServerRequest *request )
 		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open filesystem to serve index.html" );
 		request->send( 500, "text/html", msg.data() );
 		return;
-		
+
 	}
 	request->send( LittleFS, "/index.html" );
 }
@@ -144,6 +145,30 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 	}
 
 	request->send( LittleFS, request->url().c_str() );
+	delay(500);
+}
+
+void AWSWebServer::send_sdcard_file( AsyncWebServerRequest *request )
+{
+	if ( !SD.begin()) {
+
+		etl::string<64> msg;
+		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open SDCard to serve [%s].", request->url().c_str() );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open SDCard to serve [%s].", request->url().c_str() );
+		request->send( 500, "text/html", msg.data() );
+		return;
+
+	}
+	if ( !SD.exists( request->url().c_str() )) {
+
+		etl::string<64> msg;
+		Serial.printf( "[WEBSERVER ] [ERROR] SDCard file [%s] not found.", request->url().c_str() );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] SDCard file [%s] not found.", request->url().c_str() );
+		request->send( 500, "text/html", msg.data() );
+		return;
+	}
+
+	request->send( SD, request->url().c_str() );
 	delay(500);
 }
 
@@ -198,6 +223,7 @@ void AWSWebServer::start( void )
 	server->addHandler( new AsyncCallbackJsonWebHandler( "/set_config", std::bind( &AWSWebServer::set_configuration, this, std::placeholders::_1, std::placeholders::_2 )));
 	server->on( "/aws.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
+	server->on( "/unsent.txt", HTTP_GET, std::bind( &AWSWebServer::send_sdcard_file, this, std::placeholders::_1 ));
 	server->on( "/get_config", HTTP_GET, std::bind( &AWSWebServer::get_configuration, this, std::placeholders::_1 ));
 	server->on( "/get_station_data", HTTP_GET, std::bind( &AWSWebServer::get_station_data, this, std::placeholders::_1 ));
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));

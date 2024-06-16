@@ -54,10 +54,12 @@ class AWSNetwork {
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
 		uint8_t		*get_wifi_mac( void );	
-		bool		initialise( AWSConfig *, bool );
+		void		initialise( AWSConfig *, bool );
 		bool		initialise_wifi( void );
+		bool		is_wifi_connected( void );
 		byte		mask_to_cidr( uint32_t );
 		bool		post_content( const char *, size_t, const char * );
+		void		prepare_for_deep_sleep( void );
 		void		send_raw_data( uint8_t *, uint8_t );
 		bool		start_hotspot( void );
 

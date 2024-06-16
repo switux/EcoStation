@@ -55,7 +55,7 @@ IPAddress AWSNetwork::cidr_to_mask( byte cidr )
 
 bool AWSNetwork::connect_to_wifi()
 {
-	uint8_t		remaining_attempts	= 10;
+	uint8_t		remaining_attempts	= 5;
 	char		*ip = nullptr;
 	char		*cidr = nullptr;
 	const char	*ssid		= config->get_parameter<const char *>( "wifi_sta_ssid" );
@@ -95,7 +95,7 @@ bool AWSNetwork::connect_to_wifi()
 	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {	// NOSONAR
 
     Serial.print( "." );
-		delay( 1000 );
+		delay( 500 );
 	}
 
 	if ( WiFi.status () == WL_CONNECTED ) {
@@ -118,7 +118,7 @@ uint8_t *AWSNetwork::get_wifi_mac( void )
 	return wifi_mac;
 }
 
-bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
+void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
 	config = _config;
@@ -126,9 +126,10 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
 	lorawan->begin( _debug_mode );
-	
-	return initialise_wifi();
+
+	initialise_wifi();
 }
+
 
 bool AWSNetwork::initialise_wifi( void )
 {
@@ -156,6 +157,13 @@ bool AWSNetwork::initialise_wifi( void )
 			Serial.printf( "[NETWORK   ] [ERROR] Unknown wifi mode [%d]\n",  config->get_parameter<int>( "wifi_mode" ) );
 	}
 	return false;
+}
+
+bool AWSNetwork::is_wifi_connected( void )
+{
+	const char  *ssid       = config->get_parameter<const char *>( "wifi_sta_ssid" );
+
+    return (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() ));
 }
 
 byte AWSNetwork::mask_to_cidr( uint32_t subnet )
@@ -248,6 +256,11 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 		Serial.printf( "[NETWORK   ] [DEBUG] Connecting to server [%s:443] ...", remote_server );
 
 	return wifi_post_content( remote_server, final_endpoint, jsonString );
+}
+
+void AWSNetwork::prepare_for_deep_sleep( void )
+{
+	lorawan->prepare_for_deep_sleep();
 }
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )

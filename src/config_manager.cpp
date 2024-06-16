@@ -136,7 +136,6 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 	devices |= aws_device_t::BME_SENSOR * ( json_config->containsKey( "has_bme" ) ? (*json_config)["has_bme"].as<int>() : DEFAULT_HAS_BME );
 	devices |= aws_device_t::MLX_SENSOR * ( json_config->containsKey( "has_mlx" ) ? (*json_config)["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
 	devices |= aws_device_t::TSL_SENSOR * ( json_config->containsKey( "has_tsl" ) ? (*json_config)["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
-	devices |= aws_device_t::GPS_SENSOR * ( json_config->containsKey( "has_gps" ) ? (*json_config)["has_gps"].as<int>() : DEFAULT_HAS_GPS );
 
 	set_missing_parameters_to_default_values();
 
@@ -243,20 +242,22 @@ bool AWSConfig::read_hw_info_from_nvs( etl::string<64> &firmware_sha56 )
 		nvs.end();
 		return false;
 	}
-/*	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
+
+	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
 
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get Power Mode from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
-*/
-	if ( ( x = nvs.getChar( "has_lte", 127 )) == 127 ) {
 
-		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get has_lte from NVS. Please contact support.\n" );
+	if ( ( x = nvs.getChar( "has_rtc", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get RTC presence from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
-	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LTE_DEVICE;
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::RTC;
+
 	nvs.end();
 	return true;
 }
@@ -538,7 +539,6 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "automatic_updates" ):
 			case str2int( "data_push" ):
 			case str2int( "has_bme" ):
-			case str2int( "has_gps" ):
 			case str2int( "has_mlx" ):
 			case str2int( "has_tsl" ):
 				proposed_config[ item.key().c_str() ] = 1;

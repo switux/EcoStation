@@ -1,7 +1,9 @@
 /*
-  	lorawan.h
+  	AWSRTC_h.h
 
-	(c) 2023-2024 F.Lesage
+	Mininal library for DS3231 RTC
+	
+	(c) 2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -18,38 +20,23 @@
 */
 
 #pragma once
-#ifndef _lorawan_H
-#define _lorawan_H
+#ifndef _AWSRTC_h
+#define _AWSRTC_h
 
-#include <array>
-#include <HardwareSerial.h>
-#include <SPI.h>
 
-#include <lmic.h>
-#include <hal/hal.h>
-
-// https://www.thethingsnetwork.org/docs/lorawan/prefix-assignments/
-#define	TTN_NET_ID	0x13
-
-class AWSLoraWAN
+class AWSRTC
 {
+
 	private:
 
-		uint8_t		appskey[16];
-		bool		debug_mode		= false;
-		uint8_t		nwkskey[16];
-		uint32_t	devaddr;
-		osjob_t		sendjob;
-		uint8_t		mydata[64];
-		uint32_t	mylen;
+		uint8_t bcd_to_decimal( uint8_t );
+		uint8_t decimal_to_bcd( uint8_t );
 
 	public:
-
-		AWSLoraWAN( uint8_t *, uint8_t *, uint32_t );
-		bool begin( bool );
-		void prepare_for_deep_sleep( void );
-		void send( osjob_t * );
-		void send_data( uint8_t *, uint8_t );
+				AWSRTC( void );
+		void	begin( void );
+		void	get_datetime( struct tm * );
+		void	set_datetime( time_t * );
 
 };
 

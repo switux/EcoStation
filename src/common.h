@@ -27,7 +27,6 @@
 #include "etl/string_utilities.h"
 
 #include "build_id.h"
-#include "AWSGPS.h"
 
 // Force DEBUG output even if not activated by external button
 const byte DEBUG_MODE = 1;
@@ -43,15 +42,9 @@ enum class aws_device_t : unsigned long {
 	MLX_SENSOR			= 0x00000001,
 	TSL_SENSOR			= 0x00000002,
 	BME_SENSOR			= 0x00000004,
-	WIND_VANE_SENSOR	= 0x00000008,
-	ANEMOMETER_SENSOR	= 0x00000010,
-	RAIN_SENSOR			= 0x00000020,
-	GPS_SENSOR			= 0x00000040,
-	DOME_DEVICE			= 0x00000080,
-	ETHERNET_DEVICE		= 0x00000100,
-	SC16IS750_DEVICE	= 0x00000200,
-	LTE_DEVICE			= 0x00000400,
-	DBMETER_SENSOR		= 0x00000800
+	LTE					= 0x00000400,
+	DBMETER_SENSOR		= 0x00000800,
+	RTC					= 0x00001000
 };
 
 extern aws_device_t	operator&( aws_device_t, aws_device_t );
@@ -122,7 +115,6 @@ struct sensor_data_t {
 
 struct station_data_t {
 
-	gps_data_t		gps;
 	health_data_t	health;				// 6 bytes
 	struct timeval	ntp_time;
 	int				reset_reason;		// 2 bytes int

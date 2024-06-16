@@ -32,8 +32,8 @@
 #define GPIO_ENABLE_3_3V		GPIO_NUM_32
 
 // Battery level
-#define GPIO_BAT_ADC			GPIO_NUM_33
-#define GPIO_BAT_ADC_EN			GPIO_NUM_35
+#define GPIO_BAT_ADC			GPIO_NUM_35
+#define GPIO_BAT_ADC_EN			GPIO_NUM_33
 
 // SD Card reader
 #define	GPIO_SD_MOSI			GPIO_NUM_23	// Module MOSI pin
@@ -50,9 +50,5 @@
 #define	GPIO_LORA_DIO0			GPIO_NUM_14
 #define	GPIO_LORA_DIO1			GPIO_NUM_27
 #define	GPIO_LORA_DIO2			GPIO_NUM_26
-
-// GPS
-#define	GPS_RX					GPIO_NUM_17	// Module TX pin
-#define	GPS_TX					GPIO_NUM_16	// Module RX pin
 
 #endif

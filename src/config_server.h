@@ -47,7 +47,7 @@ class AWSWebServer {
 		AsyncWebServer 	*server		= nullptr;
 		bool			debug_mode	= false;
 		bool			initialised	= false;
-		
+
 		void		get_uptime( AsyncWebServerRequest * );
 		void		handle404( AsyncWebServerRequest * );
 		void		index( AsyncWebServerRequest * );
@@ -56,6 +56,7 @@ class AWSWebServer {
 		const char 	*save_configuration( const char *json_string );
 		void 		set_configuration( AsyncWebServerRequest *, JsonVariant & );
 		void		send_file( AsyncWebServerRequest * );
+		void		send_sdcard_file( AsyncWebServerRequest * );
 
 };
 

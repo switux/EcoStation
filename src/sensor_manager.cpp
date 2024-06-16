@@ -38,10 +38,6 @@ SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
 const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR |
 									aws_device_t::TSL_SENSOR |
 									aws_device_t::BME_SENSOR |
-									aws_device_t::WIND_VANE_SENSOR |
-									aws_device_t::ANEMOMETER_SENSOR |
-									aws_device_t::RAIN_SENSOR |
-									aws_device_t::GPS_SENSOR |
 									aws_device_t::DBMETER_SENSOR );
 
 const std::array<etl::string_view,3> CLOUD_COVERAGE_STR = { etl::string_view( "Clear" ), etl::string_view( "Cloudy" ), etl::string_view( "Overcast" ) };
@@ -193,14 +189,6 @@ void AWSSensorManager::initialise_MLX( void )
 
 void AWSSensorManager::initialise_sensors( void )
 {
-	if ( solar_panel ) {
-
-		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
-		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
-
-		delay( 500 );		// MLX96014 seems to take some time to properly initialise
-	}
-
 	if ( config->get_has_device( aws_device_t::BME_SENSOR ) )
 		initialise_BME();
 
@@ -353,8 +341,6 @@ void AWSSensorManager::read_MLX( void )
 void AWSSensorManager::read_sensors( void )
 {
 	retrieve_sensor_data();
-
-//	digitalWrite( GPIO_ENABLE_5V, LOW );		// Do not shut down 3.3V as SDCard needs it
 
 	if ( prev_available_sensors != available_sensors ) {
 

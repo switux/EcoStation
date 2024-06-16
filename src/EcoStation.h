@@ -22,6 +22,7 @@
 #define _EcoStation_H
 
 #include "AWSOTA.h"
+#include "AWSRTC.h"
 #include "config_server.h"
 #include "sensor_manager.h"
 #include "AWSNetwork.h"
@@ -70,11 +71,11 @@ class EcoStation {
 	private:
 
 		TaskHandle_t				aws_periodic_task_handle;
-		bool						force_ota_update			= false;
+		AWSRTC						aws_rtc;
 		compact_data_t				compact_data;
 		AWSConfig					config;
 		bool						debug_mode					= false;
-		AWSGPS						gps;
+		bool						force_ota_update			= false;
 		etl::string<1096>			json_sensor_data;
 		size_t						json_sensor_data_len;
 		etl::string<128>			location;
@@ -94,6 +95,7 @@ class EcoStation {
 		bool 			determine_boot_mode( void );
 		void			display_banner( void );
 		void			enter_config_mode( void );
+		void			fixup_timestamp( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
 		bool			initialise_network( void );
@@ -133,14 +135,13 @@ class EcoStation {
 		uint32_t			get_uptime( void );
 		bool				has_device( aws_device_t );
 		bool				initialise( void );
-		void				initialise_GPS( void );
 		void				initialise_sensors( void );
 		bool				is_sensor_initialised( aws_device_t );
 		bool				is_ready( void );
 		bool				is_ntp_synced( void );
 		bool				on_solar_panel();
 		bool				poll_sensors( void );
-		void				read_GPS( void );
+		void				prepare_for_deep_sleep( void );
 		void				reboot( void );
 		void				read_sensors( void );
 		void				report_unavailable_sensors( void );
