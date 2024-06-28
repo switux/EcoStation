@@ -18,6 +18,7 @@
 */
 
 #include "gpio_config.h"
+#include "lorawan_setup.h"
 #include "lorawan.h"
 
 const lmic_pinmap lmic_pins = {
@@ -27,48 +28,113 @@ const lmic_pinmap lmic_pins = {
   .dio	= { GPIO_LORA_DIO0, GPIO_LORA_DIO1, GPIO_LORA_DIO2 },
 };
 
-const unsigned TX_INTERVAL = 60;
-extern unsigned long			US_SLEEP;
-
-RTC_DATA_ATTR uint32_t fcnt = 0;
+RTC_DATA_ATTR lmic_t RTC_LMIC;
 
 // Only for OTAA
-void os_getArtEui (u1_t* buf) { }
-void os_getDevEui (u1_t* buf) { }
-void os_getDevKey (u1_t* buf) { }
-
-AWSLoraWAN::AWSLoraWAN( uint8_t *_appskey, uint8_t *_nwkskey, uint32_t _devaddr )
+void os_getArtEui( u1_t* buf )
 {
-	memcpy( appskey, _appskey, 16 );
-	memcpy( nwkskey, _nwkskey, 16 );
-	devaddr = _devaddr;
+	memcpy_P( buf, APPEUI, 8 );
+}
+
+void os_getDevEui( u1_t* buf )
+{
+	memcpy_P( buf, DEVEUI, 8 );
+}
+
+void os_getDevKey( u1_t* buf )
+{
+	memcpy_P( buf, APPKEY, 16 );
 }
 
 bool AWSLoraWAN::begin( bool _debug_mode )
 {
 	debug_mode = _debug_mode;
+
 	os_init();
 	LMIC_reset();
-	LMIC_setSession( TTN_NET_ID, devaddr, nwkskey, appskey );
-	LMIC_setupChannel( 0, 868100000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 1, 868300000, DR_RANGE_MAP( DR_SF12, DR_SF7B ), BAND_CENTI );
-	LMIC_setupChannel( 2, 868500000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 3, 867100000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 4, 867300000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 5, 867500000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 6, 867700000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 7, 867900000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-	LMIC_setupChannel( 8, 868800000, DR_RANGE_MAP( DR_FSK,  DR_FSK ),  BAND_MILLI );
-	LMIC_setLinkCheckMode( 1 );
-	LMIC.dn2Dr = DR_SF9;
-	LMIC_setDrTxpow( DR_SF7, 14 );
-	LMIC.seqnoUp = fcnt;
+	restore_after_deep_sleep();
+
+	if ( !joined ) {
+
+		LMIC_setupChannel( 0, 868100000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 1, 868300000, DR_RANGE_MAP( DR_SF12, DR_SF7B ), BAND_CENTI );
+		LMIC_setupChannel( 2, 868500000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 3, 867100000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 4, 867300000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 5, 867500000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 6, 867700000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 7, 867900000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
+		LMIC_setupChannel( 8, 868800000, DR_RANGE_MAP( DR_FSK,  DR_FSK ),  BAND_MILLI );
+		LMIC_setLinkCheckMode( 0 );
+		LMIC.dn2Dr = DR_SF9;
+		LMIC_setDrTxpow( DR_SF7, 14 );
+		Serial.printf( "[LORAWAN   ] [INFO ] Need to rejoin.\n" );
+
+	} else
+
+		Serial.printf( "[LORAWAN   ] [INFO ] No need to rejoin.\n" );
+
 	return true;
 }
 
-void AWSLoraWAN::prepare_for_deep_sleep( void )
+bool AWSLoraWAN::do_join( void )
 {
-    fcnt = LMIC.seqnoUp;
+	os_runloop_once();
+
+	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode& OP_JOINING ) == 0 )) {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] JOINED with devaddr=0x%lx\n", LMIC.devaddr );
+		return true;
+	}
+	return false;
+}
+
+void AWSLoraWAN::join( void )
+{
+	if ( joined )
+		return;
+
+	LMIC_startJoining();
+
+	unsigned long	start	= millis();
+
+	while ( (!( joined = do_join() )) && ( ( millis() - start ) < 10000 )) {};
+	if ( !joined )
+		Serial.printf( "[LORAWAN   ] [ERROR ] Could not join the network\n" );
+}
+
+void AWSLoraWAN::prepare_for_deep_sleep( int deep_sleep_time_secs )
+{
+	RTC_LMIC = LMIC;
+
+	//
+	// https://github.com/JackGruber/ESP32-LMIC-DeepSleep-example
+	// Otherwise stuck with opmode 0x100 set and no packet is ever transmitted
+	//
+	// FIXME: maybe we could benefit from the RTC?
+	//
+	unsigned long now = millis();
+	for( int i = 0; i < MAX_BANDS; i++ ) {
+
+		ostime_t correctedAvail = RTC_LMIC.bands[i].avail - ( (( now / 1000.0 ) + deep_sleep_time_secs ) * OSTICKS_PER_SEC );
+		if ( correctedAvail < 0 )
+			correctedAvail = 0;
+		RTC_LMIC.bands[i].avail = correctedAvail;
+
+	}
+
+	RTC_LMIC.globalDutyAvail = RTC_LMIC.globalDutyAvail - ( (( now / 1000.0 ) + deep_sleep_time_secs) * OSTICKS_PER_SEC );
+	if (RTC_LMIC.globalDutyAvail < 0)
+		RTC_LMIC.globalDutyAvail = 0;
+}
+
+void AWSLoraWAN::restore_after_deep_sleep( void )
+{
+	if ( !RTC_LMIC.seqnoUp )
+		return;
+
+	LMIC = RTC_LMIC;
+	joined = true;
 }
 
 void AWSLoraWAN::send( osjob_t *job )
@@ -80,8 +146,6 @@ void AWSLoraWAN::send( osjob_t *job )
 
 	} else {
 
-		LMIC.seqnoUp++;
-		Serial.printf("LORA SEQ #%d\n",LMIC.seqnoUp);
 		LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata), mylen, 0 );
 		if ( debug_mode ) {
 
@@ -98,7 +162,7 @@ void AWSLoraWAN::send( osjob_t *job )
 
 			os_runloop_once();
 
-			if ( ( LMIC.opmode & OP_TXRXPEND ))
+			if ( ( LMIC.opmode & OP_TXRXPEND ) || ( LMIC.opmode & OP_RNDTX ))
 				delay( 100 );
 			else
 				message_sent = true;

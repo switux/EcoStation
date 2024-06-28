@@ -24,7 +24,7 @@
 #include "EcoStation.h"
 
 const etl::string<12>		REV					= "1.0.0";
-const unsigned long			US_SLEEP			= 15 * 60 * 1000000;				// 5 minutes
+const unsigned long			US_SLEEP			= 15 * 60 * 1000000;				// 15 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 EcoStation station;
@@ -44,11 +44,7 @@ void setup()
 
 		station.read_sensors();
 		station.send_data();
-		if ( station.get_station_data()->health.battery_level > 50 )
-			station.check_ota_updates( true );
-
-		station.prepare_for_deep_sleep();
-
+		station.prepare_for_deep_sleep( static_cast<int>( US_SLEEP / 1000000 ) );
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
 		Serial.printf( "[CORE      ] [INFO ] Entering sleep mode.\n" );
 		esp_deep_sleep_start();

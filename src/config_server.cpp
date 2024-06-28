@@ -45,6 +45,30 @@ void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 	delay( 500 );
 }
 
+void AWSWebServer::get_backlog( AsyncWebServerRequest *request )
+{
+	if ( !SD.begin()) {
+
+		etl::string<64> msg;
+		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open SDCard to serve [backlog.txt]." );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open SDCard to serve [backlog.txt]." );
+		request->send( 500, "text/html", msg.data() );
+		return;
+
+	}
+	if ( !SD.exists( "/backlog.txt" )) {
+
+		etl::string<64> msg;
+		Serial.printf( "[WEBSERVER ] [ERROR] SDCard file [backlog.txt] not found." );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] SDCard file [backlog.txt] not found." );
+		request->send( 500, "text/html", msg.data() );
+		return;
+	}
+
+	request->send( SD, "/backlog.txt" );
+	delay(500);
+}
+
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 {
 	if ( station.get_json_string_config().size() ) {
@@ -224,6 +248,7 @@ void AWSWebServer::start( void )
 	server->on( "/aws.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/unsent.txt", HTTP_GET, std::bind( &AWSWebServer::send_sdcard_file, this, std::placeholders::_1 ));
+	server->on( "/get_backlog", HTTP_GET, std::bind( &AWSWebServer::get_backlog, this, std::placeholders::_1 ));
 	server->on( "/get_config", HTTP_GET, std::bind( &AWSWebServer::get_configuration, this, std::placeholders::_1 ));
 	server->on( "/get_station_data", HTTP_GET, std::bind( &AWSWebServer::get_station_data, this, std::placeholders::_1 ));
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));

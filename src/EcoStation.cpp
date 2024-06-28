@@ -52,7 +52,7 @@ extern SemaphoreHandle_t	sensors_read_mutex;
 const std::array<etl::string<10>, 3> PWR_MODE_STR = { "SolarPanel", "12VDC", "PoE" };
 
 const bool				FORMAT_LITTLEFS_IF_FAILED = true;
-const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
+const unsigned long		MAINTENANCE_MODE_GUARD		= 5000000;	// 5 seconds
 
 RTC_DATA_ATTR time_t 	boot_timestamp = 0;				// NOSONAR
 RTC_DATA_ATTR time_t 	last_ntp_time = 0;				// NOSONAR
@@ -113,21 +113,21 @@ void EcoStation::compute_uptime( void )
 
 bool EcoStation::determine_boot_mode( void )
 {
-  unsigned long start					= micros();
-  unsigned long button_pressed_secs	= 0;
+	unsigned long start					= micros();
+	unsigned long button_pressed_secs	= 0;
 
-  pinMode( GPIO_DEBUG, INPUT );
+	pinMode( GPIO_DEBUG, INPUT );
 
-  debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
-  while ( !( gpio_get_level( GPIO_DEBUG ))) {
+	debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
+	while ( !( gpio_get_level( GPIO_DEBUG ))) {
 
-    if (( micros() - start ) >= CONFIG_MODE_GUARD )
-      break;
-    delay( 100 );
-    button_pressed_secs = micros() - start;
-  }
+		if (( micros() - start ) >= MAINTENANCE_MODE_GUARD )
+			break;
+		delay( 100 );
+		button_pressed_secs = micros() - start;
+	}
 
-  return ( button_pressed_secs > CONFIG_MODE_GUARD );
+	return ( button_pressed_secs > MAINTENANCE_MODE_GUARD );
 }
 
 void EcoStation::display_banner()
@@ -172,15 +172,33 @@ void EcoStation::display_banner()
   Serial.printf( "[STATION   ] [INFO ] #############################################################################################\n" );
 }
 
-void EcoStation::enter_config_mode( void )
+bool EcoStation::enter_maintenance_mode( void )
 {
-  if ( debug_mode )
-    Serial.printf( "[STATION   ] [INFO ] Entering config mode...\n ");
+	if ( debug_mode )
+		Serial.printf( "[STATION   ] [INFO ] Trying to enter maintenance mode...\n ");
 
-  if ( !start_config_server() )
-    Serial.printf( "[STATION   ] [ERROR] Failed to start WiFi AP, cannot enter config mode.\n ");
-  else
-    while ( true );
+	if ( !network.is_wifi_connected() ) {
+
+		if ( !network.start_hotspot() ) {
+
+			Serial.printf( "[STATION   ] [ERROR] Failed to start WiFi AP and STA, cannot enter maintenance mode.\n ");
+			return false;
+
+		} else
+
+			Serial.printf( "[STATION   ] [INFO ] Failed to start WiFi STA, fallen back to AP.\n ");
+
+	}
+
+	if ( !start_config_server() ) {
+
+		Serial.printf( "[STATION   ] [PANIC ] Failed to start WiFi AP, cannot enter maintenance mode.\n ");
+		return false;
+
+	} else
+
+		while ( true );
+
 }
 
 void EcoStation::fixup_timestamp( void )
@@ -209,9 +227,6 @@ int16_t EcoStation::float_to_int16_encode( float v, float min, float max )
   else if ( v > max )
     v = max;
 
-  if ( debug_mode )
-    Serial.printf( "[STATION   ] [DEBUG] Encoding %f into 2 bytes int %d : 0x%04x\n", v, static_cast<int16_t>(v * 100), static_cast<int16_t>(v * 100) );
-
   return static_cast<int16_t>( v * 100 );
 }
 
@@ -221,9 +236,6 @@ int32_t EcoStation::float_to_int32_encode( float v, float min, float max )
     v = min;
   else if ( v > max )
     v = max;
-
-  if ( debug_mode )
-    Serial.printf("[STATION   ] [DEBUG] Encoding %f into 4 bytes int %d : 0x%08x\n", v, static_cast<int32_t>(v * 100), static_cast<int32_t>(v * 100) );
 
   return static_cast<int32_t>( v * 100 );
 }
@@ -362,7 +374,7 @@ bool EcoStation::has_device( aws_device_t device )
 
 bool EcoStation::initialise( void )
 {
-	bool					config_mode = determine_boot_mode();
+	bool					maintenance_mode = determine_boot_mode();
 	std::array<uint8_t, 6>	mac;
 	byte					offset = 0;
 	std::array<uint8_t, 32>	sha_256;
@@ -414,46 +426,32 @@ bool EcoStation::initialise( void )
 
 	network.initialise( &config, debug_mode );
 
-	if ( solar_panel && network.is_wifi_connected() ) {
-
-		enter_config_mode();
-	}
-
-	if ( ota_update_ongoing ) {
-
-		Serial.printf( "[STATION   ] [INFO ] Expected OTA firmware sha256 is [%s]\n", config.get_ota_sha256().data() );
-		ota_update_ongoing = false;
-
-	}
-
- 	if ( solar_panel ) {
-
+	if ( solar_panel ) {
+		
   		// Issue #143
   		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  		if ( config_mode )
-  			enter_config_mode();
-
-  	} else
-
-		start_config_server();
-
-	if ( !startup_sanity_check() && config.can_rollback() )
-		return config.rollback();
-
-	display_banner();
-
-	// FIXME: only if ntp is possible -> wifi connected and internet access
-	if ( !solar_panel )
-		sync_time( true );
-
-	if ( solar_panel ) {
+		if ( network.is_wifi_connected() || maintenance_mode )
+			enter_maintenance_mode();
+		else
+			WiFi.mode ( WIFI_OFF );
 
 		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
 		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
 
+	} else {
+
+		start_config_server();
+		sync_time( true );
+	}
+	
+	if ( ota_update_ongoing ) {
+
+		Serial.printf( "[STATION   ] [INFO ] Expected OTA firmware sha256 is [%s]\n", config.get_ota_sha256().data() );
+		ota_update_ongoing = false;
 	}
 
+	display_banner();
 	fixup_timestamp();
 
 	if ( !sensor_manager.initialise( &config, &compact_data ))
@@ -595,9 +593,9 @@ bool EcoStation::poll_sensors( void )
 	return sensor_manager.poll_sensors();
 }
 
-void EcoStation::prepare_for_deep_sleep( void )
+void EcoStation::prepare_for_deep_sleep( int deep_sleep_secs )
 {
-	network.prepare_for_deep_sleep();	
+	network.prepare_for_deep_sleep( deep_sleep_secs );	
 }
 
 template void EcoStation::print_config_string<>( const char *fmt );
@@ -663,32 +661,33 @@ void EcoStation::print_runtime_config( void )
 
 void EcoStation::read_battery_level( void )
 {
-  if ( !solar_panel )
-    return;
+	if ( !solar_panel )
+		return;
 
-  int		adc_value = 0;
+	int	adc_value = 0;
 
-  WiFi.mode ( WIFI_OFF );
+	WiFi.mode ( WIFI_OFF );
 
-  digitalWrite( GPIO_BAT_ADC_EN, HIGH );
-  delay( 500 );
+	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
+	// FIXME: needed?
+	delay( 500 );
 
-  for ( uint8_t i = 0; i < 5; i++ )
-    adc_value += analogRead( GPIO_BAT_ADC );
+	for ( uint8_t i = 0; i < 5; i++ )
+		adc_value += analogRead( GPIO_BAT_ADC );
 
-  adc_value = adc_value / 5;
-  station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
-  compact_data.battery_level = float_to_int16_encode( station_data.health.battery_level, 0, 100 );
+	adc_value = adc_value / 5;
+	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
+	compact_data.battery_level = float_to_int16_encode( station_data.health.battery_level, 0, 100 );
 
-  if ( debug_mode ) {
+	if ( debug_mode ) {
 
-    Serial.print( "[STATION   ] [DEBUG] Battery level: " );
-    float adc_v_in = adc_value * VCC / ADC_V_MAX;
-    float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
-    Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", station_data.health.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
-  }
+		Serial.print( "[STATION   ] [DEBUG] Battery level: " );
+		float adc_v_in = adc_value * VCC / ADC_V_MAX;
+		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
+		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", station_data.health.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
+	}
 
-  digitalWrite( GPIO_BAT_ADC_EN, LOW );
+	digitalWrite( GPIO_BAT_ADC_EN, LOW );
 }
 
 int EcoStation::reformat_ca_root_line( std::array<char, 108> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
@@ -801,14 +800,14 @@ void EcoStation::send_backlog_data( void )
     return;
   }
 
-  if ( !SD.exists( "/unsent.txt" )) {
+  if ( !SD.exists( "/backlog.txt" )) {
 
     Serial.printf( "[STATION   ] [INFO ] No backlog file.\n" );
     return;
 
   }
   // flawfinder: ignore
-  File backlog = SD.open( "/unsent.txt", FILE_READ );
+  File backlog = SD.open( "/backlog.txt", FILE_READ );
 
   if ( !backlog ) {
 
@@ -826,7 +825,7 @@ void EcoStation::send_backlog_data( void )
   }
 
   // flawfinder: ignore
-  File new_backlog = SD.open( "/unsent.new", FILE_WRITE );
+  File new_backlog = SD.open( "/backlog.new", FILE_WRITE );
 
   while ( backlog.available() ) {
 
@@ -849,15 +848,15 @@ void EcoStation::send_backlog_data( void )
 
   if ( !empty ) {
 
-    SD.remove( "/unsent.txt" );
-    SD.rename( "/unsent.new", "/unsent.txt" );
+    SD.remove( "/backlog.txt" );
+    SD.rename( "/backlog.new", "/backlog.txt" );
     if ( debug_mode )
       Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
 
   } else {
 
-    SD.remove( "/unsent.txt" );
-    SD.remove( "/unsent.new" );
+    SD.remove( "/backlog.txt" );
+    SD.remove( "/backlog.new" );
     if ( debug_mode )
       Serial.printf( "[STATION   ] [DEBUG] Data backlog is empty.\n");
   }
@@ -898,19 +897,6 @@ bool EcoStation::start_config_server( void )
   return true;
 }
 
-bool EcoStation::startup_sanity_check( void )
-{
-  switch ( static_cast<aws_iface>( config.get_parameter<int>( "pref_iface" ) )) {
-
-    case aws_iface::wifi_sta:
-      return Ping.ping( WiFi.gatewayIP(), 3 );
-
-    case aws_iface::wifi_ap:
-      return true;
-  }
-  return false;
-}
-
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
   bool ok;
@@ -920,7 +906,7 @@ bool EcoStation::store_unsent_data( etl::string_view data )
     return false;
   }
 
-  File backlog = SD.open( "/unsent.txt", FILE_APPEND );
+  File backlog = SD.open( "/backlog.txt", FILE_APPEND );
   if ( !backlog ) {
 
     Serial.printf( "[STATION   ] [ERROR] Cannot store data until server is available.\n" );

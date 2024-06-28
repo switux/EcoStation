@@ -94,7 +94,7 @@ class EcoStation {
 		void			compute_uptime( void );
 		bool 			determine_boot_mode( void );
 		void			display_banner( void );
-		void			enter_config_mode( void );
+		bool			enter_maintenance_mode( void );
 		void			fixup_timestamp( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
@@ -112,7 +112,6 @@ class EcoStation {
 		void			send_backlog_data( void );
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
-		bool			startup_sanity_check( void );
 		bool			store_unsent_data( etl::string_view );
 		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
@@ -141,7 +140,7 @@ class EcoStation {
 		bool				is_ntp_synced( void );
 		bool				on_solar_panel();
 		bool				poll_sensors( void );
-		void				prepare_for_deep_sleep( void );
+		void				prepare_for_deep_sleep( int );
 		void				reboot( void );
 		void				read_sensors( void );
 		void				report_unavailable_sensors( void );

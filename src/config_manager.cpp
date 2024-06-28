@@ -352,7 +352,8 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	Serial.printf( "[CONFIGMNGR] [INFO ] Wrote %d bytes, configuration save successful.\n", s );
 
 	LittleFS.remove( "/root_ca.txt.try" );
-	LittleFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
+	if ( LittleFS.exists( "/root_ca.txt" ))
+		LittleFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
 
 	file = LittleFS.open( "/root_ca.txt.try", FILE_WRITE );
 	s = file.print( root_ca.data() );

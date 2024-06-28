@@ -28,28 +28,27 @@
 #include <lmic.h>
 #include <hal/hal.h>
 
-// https://www.thethingsnetwork.org/docs/lorawan/prefix-assignments/
-#define	TTN_NET_ID	0x13
-
 class AWSLoraWAN
 {
-	private:
+  private:
 
-		uint8_t		appskey[16];
-		bool		debug_mode		= false;
-		uint8_t		nwkskey[16];
-		uint32_t	devaddr;
-		osjob_t		sendjob;
-		uint8_t		mydata[64];
-		uint32_t	mylen;
+    bool		debug_mode		= false;
+	bool		joined 			= false;
+    osjob_t		sendjob;
+    uint8_t		mydata[64];
+    uint32_t	mylen;
+	
+    bool do_join( void );
 
-	public:
+  public:
 
-		AWSLoraWAN( uint8_t *, uint8_t *, uint32_t );
-		bool begin( bool );
-		void prepare_for_deep_sleep( void );
-		void send( osjob_t * );
-		void send_data( uint8_t *, uint8_t );
+    AWSLoraWAN( void ) = default;
+    bool begin( bool );
+    void join( void );
+    void prepare_for_deep_sleep( int );
+    void restore_after_deep_sleep( void );
+    void send( osjob_t * );
+    void send_data( uint8_t *, uint8_t );
 
 };
 

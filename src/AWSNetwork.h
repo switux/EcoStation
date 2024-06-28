@@ -59,7 +59,7 @@ class AWSNetwork {
 		bool		is_wifi_connected( void );
 		byte		mask_to_cidr( uint32_t );
 		bool		post_content( const char *, size_t, const char * );
-		void		prepare_for_deep_sleep( void );
+		void		prepare_for_deep_sleep( int );
 		void		send_raw_data( uint8_t *, uint8_t );
 		bool		start_hotspot( void );
 

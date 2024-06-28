@@ -38,7 +38,8 @@ AWSNetwork::AWSNetwork( void )
 	current_wifi_mode = aws_wifi_mode::sta;
 	current_pref_iface = aws_iface::wifi_sta;
 	memset( wifi_mac, 0, 6 );
-	lorawan = new AWSLoraWAN( APPSKEY, NWKSKEY, DEVADDR );
+//	lorawan = new AWSLoraWAN( APPSKEY, NWKSKEY, DEVADDR );
+	lorawan = new AWSLoraWAN;
 }
 
 IPAddress AWSNetwork::cidr_to_mask( byte cidr )
@@ -69,6 +70,7 @@ bool AWSNetwork::connect_to_wifi()
 		return true;
 	}
 
+	WiFi.mode( WIFI_STA );
 	Serial.printf( "[NETWORK   ] [INFO ] Attempting to connect to SSID [%s] ", ssid );
 
 	if ( static_cast<aws_ip_mode>(config->get_parameter<int>( "wifi_sta_ip_mode" )) == aws_ip_mode::fixed ) {
@@ -126,7 +128,6 @@ void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
 	lorawan->begin( _debug_mode );
-
 	initialise_wifi();
 }
 
@@ -138,7 +139,6 @@ bool AWSNetwork::initialise_wifi( void )
 		case aws_wifi_mode::ap:
 			if ( debug_mode )
 				Serial.printf( "[NETWORK   ] [DEBUG] Booting in AP mode.\n" );
-			WiFi.mode( WIFI_AP );
 			return start_hotspot();
 
 		case aws_wifi_mode::both:
@@ -150,7 +150,6 @@ bool AWSNetwork::initialise_wifi( void )
 		case aws_wifi_mode::sta:
 			if ( debug_mode )
 				Serial.printf( "[NETWORK   ] [DEBUG] Booting in STA mode.\n" );
-			WiFi.mode( WIFI_STA );
 			return connect_to_wifi();
 
 		default:
@@ -258,13 +257,14 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	return wifi_post_content( remote_server, final_endpoint, jsonString );
 }
 
-void AWSNetwork::prepare_for_deep_sleep( void )
+void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 {
-	lorawan->prepare_for_deep_sleep();
+	lorawan->prepare_for_deep_sleep( deep_sleep_secs );
 }
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
+	lorawan->join();
 	lorawan->send_data( buffer, len );	
 }
 
@@ -279,6 +279,8 @@ bool AWSNetwork::start_hotspot( void )
 
 	if ( debug_mode )
 		Serial.printf( "[NETWORK   ] [DEBUG] Trying to start AP on SSID [%s] with password [%s]\n", ssid, password );
+
+	WiFi.mode( WIFI_AP );
 
 	if ( WiFi.softAP( ssid, password )) {
 
