@@ -44,7 +44,9 @@ enum class aws_device_t : unsigned long {
 	BME_SENSOR			= 0x00000004,
 	LTE					= 0x00000400,
 	DBMETER_SENSOR		= 0x00000800,
-	RTC					= 0x00001000
+	RTC					= 0x00001000,
+	SDCARD				= 0x00002000,
+	LORAWAN				= 0x00004000
 };
 
 extern aws_device_t	operator&( aws_device_t, aws_device_t );

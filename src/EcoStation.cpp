@@ -71,21 +71,20 @@ EcoStation::EcoStation( void )
 
 void EcoStation::check_ota_updates( bool force_update = false )
 {
-  ota_status_t	ota_retcode;
+	ota_status_t	ota_retcode;
 
-  Serial.printf( "[STATION   ] [INFO ] Checking for OTA firmware update.\n" );
+	Serial.printf( "[STATION   ] [INFO ] Checking for OTA firmware update.\n" );
 
-  ota_update_ongoing = true;
-  ota.set_aws_board_id( ota_setup.board );
-  ota.set_aws_device_id( ota_setup.device );
-  ota.set_aws_config( ota_setup.config );
-  ota.set_progress_callback( OTA_callback );
-  ota_setup.last_update_ts = get_timestamp();
+	ota_update_ongoing = true;
+	ota.set_aws_board_id( ota_setup.board );
+	ota.set_aws_device_id( ota_setup.device );
+	ota.set_aws_config( ota_setup.config );
+	ota.set_progress_callback( OTA_callback );
+	ota_setup.last_update_ts = get_timestamp();
 
-  ota_retcode = ota.check_for_update( config.get_parameter<const char *>( "ota_url" ), config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
-  Serial.printf( "[STATION   ] [INFO ] Firmware OTA update result: (%d) %s.\n", ota_retcode, OTA_message( ota_retcode ));
-  ota_update_ongoing = false;
-
+	ota_retcode = ota.check_for_update( config.get_parameter<const char *>( "ota_url" ), config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
+	Serial.printf( "[STATION   ] [INFO ] Firmware OTA update result: (%d) %s.\n", ota_retcode, OTA_message( ota_retcode ));
+	ota_update_ongoing = false;
 }
 
 void EcoStation::compute_uptime( void )
@@ -132,44 +131,44 @@ bool EcoStation::determine_boot_mode( void )
 
 void EcoStation::display_banner()
 {
-  if ( !debug_mode )
-    return;
+	if ( !debug_mode )
+		return;
 
-  uint8_t	*wifi_mac = network.get_wifi_mac();
-  int		i;
+	uint8_t	*wifi_mac = network.get_wifi_mac();
+	int		i;
 
-  Serial.printf( "\n[STATION   ] [INFO ] #############################################################################################\n" );
-  Serial.printf( "[STATION   ] [INFO ] # EcoStation                                                                                #\n" );
-  Serial.printf( "[STATION   ] [INFO ] #  (c) lesage@loads.ch                                                                      #\n" );
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
-  Serial.printf( "[STATION   ] [INFO ] # HARDWARE SETUP                                                                            #\n" );
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "\n[STATION   ] [INFO ] #############################################################################################\n" );
+	Serial.printf( "[STATION   ] [INFO ] # EcoStation                                                                                #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #  (c) lesage@loads.ch                                                                      #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # HARDWARE SETUP                                                                            #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
-  print_config_string( "# Board              : %s", ota_setup.board.data() );
-  print_config_string( "# Model              : %s", ota_setup.config.data() );
-  print_config_string( "# WIFI Mac           : %s", ota_setup.device.data() );
-  print_config_string( "# LoRaWAN            : %s", "LoRaWAN" );
-  print_config_string( "# Firmware           : %s", ota_setup.version.data() );
+	print_config_string( "# Board              : %s", ota_setup.board.data() );
+	print_config_string( "# Model              : %s", ota_setup.config.data() );
+	print_config_string( "# WIFI Mac           : %s", ota_setup.device.data() );
+	print_config_string( "# LoRaWAN            : %s", "LoRaWAN" );
+	print_config_string( "# Firmware           : %s", ota_setup.version.data() );
 
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
-  Serial.printf( "[STATION   ] [INFO ] # GPIO PIN CONFIGURATION                                                                    #\n" );
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # GPIO PIN CONFIGURATION                                                                    #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
-  if ( solar_panel ) {
+	if ( solar_panel ) {
 
-    print_config_string( "# 3.3V SWITCH   : %d", GPIO_ENABLE_3_3V );
-    print_config_string( "# BAT LVL       : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
+		print_config_string( "# 3.3V SWITCH   : %d", GPIO_ENABLE_3_3V );
+		print_config_string( "# BAT LVL       : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
 
-  }
-  print_config_string( "# DEBUG/CONFIG  : %d", GPIO_DEBUG );
+	}
+	print_config_string( "# DEBUG/CONFIG  : %d", GPIO_DEBUG );
 
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
-  Serial.printf( "[STATION   ] [INFO ] # RUNTIME CONFIGURATION                                                                     #\n" );
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # RUNTIME CONFIGURATION                                                                     #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
-  print_runtime_config();
+	print_runtime_config();
 
-  Serial.printf( "[STATION   ] [INFO ] #############################################################################################\n" );
+	Serial.printf( "[STATION   ] [INFO ] #############################################################################################\n" );
 }
 
 bool EcoStation::enter_maintenance_mode( void )
@@ -222,153 +221,158 @@ void EcoStation::fixup_timestamp( void )
 
 int16_t EcoStation::float_to_int16_encode( float v, float min, float max )
 {
-  if ( v < min )
-    v = min;
-  else if ( v > max )
-    v = max;
+	if ( v < min )
+		v = min;
+	else if ( v > max )
+		v = max;
 
-  return static_cast<int16_t>( v * 100 );
+	return static_cast<int16_t>( v * 100 );
 }
 
 int32_t EcoStation::float_to_int32_encode( float v, float min, float max )
 {
-  if ( v < min )
-    v = min;
-  else if ( v > max )
-    v = max;
+	if ( v < min )
+		v = min;
+	else if ( v > max )
+		v = max;
 
-  return static_cast<int32_t>( v * 100 );
+	return static_cast<int32_t>( v * 100 );
 }
 
 template<typename... Args>
 etl::string<96> EcoStation::format_helper( const char *fmt, Args... args )
 {
-  char buf[96];	// NOSONAR
-  snprintf( buf, 95, fmt, args... );
-  return etl::string<96>( buf );
+	char buf[96];	// NOSONAR
+	snprintf( buf, 95, fmt, args... );
+	return etl::string<96>( buf );
 }
 
 uint16_t EcoStation::get_config_port( void )
 {
-  return config.get_parameter<int>( "config_port" );
+	return config.get_parameter<int>( "config_port" );
 }
 
 bool EcoStation::get_debug_mode( void )
 {
-  return debug_mode;
+	return debug_mode;
 }
 
 etl::string_view EcoStation::get_json_sensor_data( void )
 {
-  DynamicJsonDocument	json_data(860);
-  sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
-  int					l;
+	DynamicJsonDocument	json_data(860);
+	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
+	int					l;
 
-  json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
-  json_data["battery_level"] = station_data.health.battery_level;
-  json_data["timestamp"] = sensor_data->timestamp;
-  json_data["temperature"] = sensor_data->weather.temperature;
-  json_data["pressure"] = sensor_data->weather.pressure;
-  json_data["sl_pressure"] = sensor_data->weather.sl_pressure;
-  json_data["rh"] = sensor_data->weather.rh;
-  json_data["db"] = sensor_data->db;
-  json_data["ota_board"] = ota_setup.board.data();
-  json_data["ota_device"] = ota_setup.device.data();
-  json_data["ota_config"] = ota_setup.config.data();
-  json_data["build_id" ] = ota_setup.version.data();
-  json_data["dew_point"] = sensor_data->weather.dew_point;
-  json_data["raw_sky_temperature"] = sensor_data->weather.raw_sky_temperature;
-  json_data["sky_temperature"] = sensor_data->weather.sky_temperature;
-  json_data["ambient_temperature"] = sensor_data->weather.ambient_temperature;
-  json_data["cloud_coverage"] = sensor_data->weather.cloud_coverage;
-  json_data["msas"] = sensor_data->sqm.msas;
-  json_data["nelm"] = sensor_data->sqm.nelm;
-  json_data["integration_time"] = sensor_data->sqm.integration_time;
-  json_data["gain"] = sensor_data->sqm.gain;
-  json_data["ir_luminosity"] = sensor_data->sqm.ir_luminosity;
-  json_data["full_luminosity"] = sensor_data->sqm.full_luminosity;
-  json_data["lux"] = sensor_data->sun.lux;
-  json_data["irradiance"] = sensor_data->sun.irradiance;
-  json_data["ntp_time_sec"] = station_data.ntp_time.tv_sec;
-  json_data["ntp_time_usec"] = station_data.ntp_time.tv_usec;
-  json_data["uptime"] = get_uptime();
-  json_data["init_heap_size"] = station_data.health.init_heap_size;
-  json_data["current_heap_size"] = station_data.health.current_heap_size;
-  json_data["largest_free_heap_block" ] = station_data.health.largest_free_heap_block;
-  json_data["ota_code" ] = static_cast<int>( ota_setup.status_code );
-  json_data["ota_status_ts" ] = ota_setup.status_ts;
-  json_data["ota_last_update_ts" ] = ota_setup.last_update_ts;
-  json_data["reset_reason"] = station_data.reset_reason;
+	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
+	json_data["battery_level"] = station_data.health.battery_level;
+	json_data["timestamp"] = sensor_data->timestamp;
+	json_data["temperature"] = sensor_data->weather.temperature;
+	json_data["pressure"] = sensor_data->weather.pressure;
+	json_data["sl_pressure"] = sensor_data->weather.sl_pressure;
+	json_data["rh"] = sensor_data->weather.rh;
+	json_data["db"] = sensor_data->db;
+	json_data["ota_board"] = ota_setup.board.data();
+	json_data["ota_device"] = ota_setup.device.data();
+	json_data["ota_config"] = ota_setup.config.data();
+	json_data["build_id" ] = ota_setup.version.data();
+	json_data["dew_point"] = sensor_data->weather.dew_point;
+	json_data["raw_sky_temperature"] = sensor_data->weather.raw_sky_temperature;
+	json_data["sky_temperature"] = sensor_data->weather.sky_temperature;
+	json_data["ambient_temperature"] = sensor_data->weather.ambient_temperature;
+	json_data["cloud_coverage"] = sensor_data->weather.cloud_coverage;
+	json_data["msas"] = sensor_data->sqm.msas;
+	json_data["nelm"] = sensor_data->sqm.nelm;
+	json_data["integration_time"] = sensor_data->sqm.integration_time;
+	json_data["gain"] = sensor_data->sqm.gain;
+	json_data["ir_luminosity"] = sensor_data->sqm.ir_luminosity;
+	json_data["full_luminosity"] = sensor_data->sqm.full_luminosity;
+	json_data["lux"] = sensor_data->sun.lux;
+	json_data["irradiance"] = sensor_data->sun.irradiance;
+	json_data["ntp_time_sec"] = station_data.ntp_time.tv_sec;
+	json_data["ntp_time_usec"] = station_data.ntp_time.tv_usec;
+	json_data["uptime"] = get_uptime();
+	json_data["init_heap_size"] = station_data.health.init_heap_size;
+	json_data["current_heap_size"] = station_data.health.current_heap_size;
+	json_data["largest_free_heap_block" ] = station_data.health.largest_free_heap_block;
+	json_data["ota_code" ] = static_cast<int>( ota_setup.status_code );
+	json_data["ota_status_ts" ] = ota_setup.status_ts;
+	json_data["ota_last_update_ts" ] = ota_setup.last_update_ts;
+	json_data["reset_reason"] = station_data.reset_reason;
 
-  if ( ( l = measureJson( json_data )) > json_sensor_data.capacity() ) {
+	if ( ( l = measureJson( json_data )) > json_sensor_data.capacity() ) {
 
-    etl::string<64> tmp;
-    snprintf( tmp.data(), tmp.capacity(), "sensor_data json is too small ( %d > %d )", l, json_sensor_data.capacity() );
-    send_alarm( "[STATION] BUG", tmp.data() );
-    Serial.printf( "[STATION   ] [BUG  ] sensor_data json is too small ( %d > %d ). Please report to support!\n", l, json_sensor_data.capacity() );
-    return etl::string_view( "" );
+		etl::string<64> tmp;
+		snprintf( tmp.data(), tmp.capacity(), "sensor_data json is too small ( %d > %d )", l, json_sensor_data.capacity() );
+		send_alarm( "[STATION] BUG", tmp.data() );
+		Serial.printf( "[STATION   ] [BUG  ] sensor_data json is too small ( %d > %d ). Please report to support!\n", l, json_sensor_data.capacity() );
+		return etl::string_view( "" );
 
-  }
-  json_sensor_data_len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
-  if ( debug_mode )
-    Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", json_sensor_data_len, json_sensor_data.capacity() );
+	}
+	json_sensor_data_len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	if ( debug_mode )
+		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", json_sensor_data_len, json_sensor_data.capacity() );
 
-  return etl::string_view( json_sensor_data );
+	return etl::string_view( json_sensor_data );
 }
 
 etl::string_view EcoStation::get_json_string_config( void )
 {
-  return etl::string_view( config.get_json_string_config() );
+	return etl::string_view( config.get_json_string_config() );
 }
 
 etl::string_view EcoStation::get_location( void )
 {
-  return etl::string_view( location );
+	return etl::string_view( location );
 }
 
 etl::string_view EcoStation::get_root_ca( void )
 {
-  return config.get_root_ca();
+	return config.get_root_ca();
 }
 
 sensor_data_t *EcoStation::get_sensor_data( void )
 {
-  return sensor_manager.get_sensor_data();
+	return sensor_manager.get_sensor_data();
 }
 
 station_data_t *EcoStation::get_station_data( void )
 {
-  return &station_data;
+	return &station_data;
 }
 
 time_t EcoStation::get_timestamp( void )
 {
-  time_t now = 0;
+	time_t now = 0;
 
-  if ( ntp_synced || config.get_has_device( aws_device_t::RTC ))
-    time( &now );
+	if ( ntp_synced || config.get_has_device( aws_device_t::RTC ))
+		time( &now );
 
-  return now;
+	return now;
 }
 
 etl::string_view EcoStation::get_unique_build_id( void )
 {
-  return etl::string_view( ota_setup.version );
+	return etl::string_view( ota_setup.version );
 }
 
 uint32_t EcoStation::get_uptime( void )
 {
-  compute_uptime();
-  return station_data.health.uptime;
+	compute_uptime();
+	return station_data.health.uptime;
 }
 
 bool EcoStation::has_device( aws_device_t device )
 {
-  switch ( device ) {
-    case aws_device_t::MLX_SENSOR:
-      return config.get_has_device( device );
-    default:
-      return false;
+	switch ( device ) {
+		case aws_device_t::MLX_SENSOR:
+		case aws_device_t::TSL_SENSOR:
+		case aws_device_t::BME_SENSOR:
+		case aws_device_t::SPL_SENSOR:
+		case aws_device_t::RTC:
+		case aws_device_t::LORAWAN:
+			return config.get_has_device( device );
+		default:
+			return false;
   }
 }
 
@@ -473,40 +477,41 @@ bool EcoStation::initialise( void )
 
 void EcoStation::initialise_sensors( void )
 {
-  sensor_manager.initialise_sensors();
+ 	sensor_manager.initialise_sensors();
 }
 
 bool EcoStation::is_ntp_synced( void )
 {
-  return ntp_synced;
+	return ntp_synced;
 }
 
 bool EcoStation::is_ready( void )
 {
-  return ready;
+	return ready;
 }
 
 bool EcoStation::is_sensor_initialised( aws_device_t sensor_id )
 {
-  return (( sensor_manager.get_available_sensors() & sensor_id ) == sensor_id );
+	return (( sensor_manager.get_available_sensors() & sensor_id ) == sensor_id );
 }
 
 bool EcoStation::on_solar_panel( void )
 {
-  return solar_panel;
+	return solar_panel;
 }
 
 void OTA_callback( int offset, int total_length )
 {
-  static float	percentage = 0.F;
-  float			p = ( 100.F * offset / total_length );
+	static float	percentage = 0.F;
+	float			p = ( 100.F * offset / total_length );
 
-  if ( p - percentage > 10.F ) {
-    esp_task_wdt_reset();
-    Serial.printf("[STATION   ] [INFO ] Updating %d of %d (%02d%%)...\n", offset, total_length, 100 * offset / total_length );
-    percentage = p;
-  }
-  esp_task_wdt_reset();
+	if ( p - percentage > 10.F ) {
+
+		esp_task_wdt_reset();
+		Serial.printf("[STATION   ] [INFO ] Updating %d of %d (%02d%%)...\n", offset, total_length, 100 * offset / total_length );
+		percentage = p;
+	}
+	esp_task_wdt_reset();
 }
 
 const char *EcoStation::OTA_message( ota_status_t code )
@@ -794,6 +799,8 @@ void EcoStation::send_backlog_data( void )
   etl::string<1024> line;
   bool	empty = true;
 
+	unselect_spi_devices();
+	
   if ( !SD.begin() ) {
 
     Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
@@ -900,7 +907,9 @@ bool EcoStation::start_config_server( void )
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
   bool ok;
-  if ( !SD.begin() ) {
+
+  unselect_spi_devices();
+  if ( !SD.begin( GPIO_SD_CS ) ) {
 
     Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
     return false;
@@ -981,7 +990,6 @@ bool EcoStation::sync_time( bool verbose )
     // Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
     ntp_time_misses++;
     sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
-
   }
   return ntp_synced;
 }
@@ -989,6 +997,12 @@ bool EcoStation::sync_time( bool verbose )
 void EcoStation::trigger_ota_update( void )
 {
   force_ota_update = true;
+}
+
+void EcoStation::unselect_spi_devices( void )
+{
+	digitalWrite( GPIO_SD_CS, HIGH );
+	digitalWrite( GPIO_LORA_CS, HIGH );
 }
 
 bool EcoStation::update_config( JsonVariant &proposed_config )

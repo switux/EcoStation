@@ -148,6 +148,7 @@ class EcoStation {
 		void				send_data( void );
 		bool				sync_time( bool );
 		void				trigger_ota_update( void );
+		void				unselect_spi_devices( void );
 		bool				update_config( JsonVariant & );
 };
 

@@ -38,7 +38,6 @@ AWSNetwork::AWSNetwork( void )
 	current_wifi_mode = aws_wifi_mode::sta;
 	current_pref_iface = aws_iface::wifi_sta;
 	memset( wifi_mac, 0, 6 );
-//	lorawan = new AWSLoraWAN( APPSKEY, NWKSKEY, DEVADDR );
 	lorawan = new AWSLoraWAN;
 }
 
@@ -127,6 +126,8 @@ void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
+	station.unselect_spi_devices();
+	
 	lorawan->begin( _debug_mode );
 	initialise_wifi();
 }
@@ -264,6 +265,8 @@ void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
+	station.unselect_spi_devices();
+
 	lorawan->join();
 	lorawan->send_data( buffer, len );	
 }

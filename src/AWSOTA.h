@@ -48,7 +48,7 @@ class AWSOTA {
 
 	public:
 
-			AWSOTA( void );
+						AWSOTA( void );
 		ota_status_t	check_for_update( const char *, const char *root_ca, etl::string<26> &, ota_action_t );
 		void			set_aws_board_id( etl::string<24> & );
 		void			set_aws_config( etl::string<32> & );

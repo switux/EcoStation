@@ -81,7 +81,7 @@ bool AWSLoraWAN::do_join( void )
 {
 	os_runloop_once();
 
-	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode& OP_JOINING ) == 0 )) {
+	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode & OP_JOINING ) == 0 )) {
 
 		Serial.printf( "[LORAWAN   ] [INFO ] JOINED with devaddr=0x%lx\n", LMIC.devaddr );
 		return true;

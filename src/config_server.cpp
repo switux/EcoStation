@@ -47,6 +47,8 @@ void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_backlog( AsyncWebServerRequest *request )
 {
+	station.unselect_spi_devices();
+
 	if ( !SD.begin()) {
 
 		etl::string<64> msg;
@@ -174,6 +176,8 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 
 void AWSWebServer::send_sdcard_file( AsyncWebServerRequest *request )
 {
+	station.unselect_spi_devices();
+
 	if ( !SD.begin()) {
 
 		etl::string<64> msg;

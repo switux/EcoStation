@@ -31,48 +31,47 @@ AWSRTC::AWSRTC( void )
 
 uint8_t AWSRTC::bcd_to_decimal( uint8_t i )
 {
-  return ((( i / 16 ) * 10 ) + ( i % 16 ));
+	return ((( i / 16 ) * 10 ) + ( i % 16 ));
 }
 
 uint8_t AWSRTC::decimal_to_bcd( uint8_t i )
 {
-  return ((( i / 10 ) * 16 ) + ( i % 10 ));
+	return ((( i / 10 ) * 16 ) + ( i % 10 ));
 }
 
 void AWSRTC::begin( void )
 {
-  Wire.begin();
+ 	Wire.begin();
 }
 
 void AWSRTC::set_datetime( time_t *now )
 {
-  struct tm	dummy;
-  struct tm	*utc_time = gmtime_r( now, &dummy );
+	struct tm	dummy;
+ 	struct tm	*utc_time = gmtime_r( now, &dummy );
 
-  Wire.beginTransmission( DS3231_I2C_ADDRESS );
-  Wire.write( 0 );
-  Wire.write( decimal_to_bcd( utc_time->tm_sec ));
-  Wire.write( decimal_to_bcd( utc_time->tm_min ));
-  Wire.write( decimal_to_bcd( utc_time->tm_hour ));
-  Wire.write( decimal_to_bcd( utc_time->tm_wday ));
-  Wire.write( decimal_to_bcd( utc_time->tm_mday ));
-  Wire.write( decimal_to_bcd( utc_time->tm_mon ));
-  Wire.write( decimal_to_bcd( utc_time->tm_year - 100 ));
-  Wire.endTransmission();
+	Wire.beginTransmission( DS3231_I2C_ADDRESS );
+	Wire.write( 0 );
+	Wire.write( decimal_to_bcd( utc_time->tm_sec ));
+	Wire.write( decimal_to_bcd( utc_time->tm_min ));
+	Wire.write( decimal_to_bcd( utc_time->tm_hour ));
+	Wire.write( decimal_to_bcd( utc_time->tm_wday ));
+	Wire.write( decimal_to_bcd( utc_time->tm_mday ));
+	Wire.write( decimal_to_bcd( utc_time->tm_mon ));
+	Wire.write( decimal_to_bcd( utc_time->tm_year - 100 ));
+	Wire.endTransmission();
 }
 
 void AWSRTC::get_datetime( struct tm *utc_time )
 {
-  Wire.beginTransmission( DS3231_I2C_ADDRESS );
-  Wire.write( 0 );
-  Wire.endTransmission();
-  Wire.requestFrom( DS3231_I2C_ADDRESS, 7 );
-  utc_time->tm_sec = bcd_to_decimal( Wire.read() & 0x7F );
-  utc_time->tm_min = bcd_to_decimal( Wire.read() );
-  utc_time->tm_hour = bcd_to_decimal( Wire.read() & 0x3F );
-  utc_time->tm_wday = bcd_to_decimal( Wire.read() );
-  utc_time->tm_mday = bcd_to_decimal( Wire.read() );
-  utc_time->tm_mon = bcd_to_decimal( Wire.read() );
-  utc_time->tm_year = 100 + bcd_to_decimal( Wire.read() );
-
+	Wire.beginTransmission( DS3231_I2C_ADDRESS );
+	Wire.write( 0 );
+	Wire.endTransmission();
+	Wire.requestFrom( DS3231_I2C_ADDRESS, 7 );
+	utc_time->tm_sec = bcd_to_decimal( Wire.read() & 0x7F );
+	utc_time->tm_min = bcd_to_decimal( Wire.read() );
+	utc_time->tm_hour = bcd_to_decimal( Wire.read() & 0x3F );
+	utc_time->tm_wday = bcd_to_decimal( Wire.read() );
+	utc_time->tm_mday = bcd_to_decimal( Wire.read() );
+	utc_time->tm_mon = bcd_to_decimal( Wire.read() );
+	utc_time->tm_year = 100 + bcd_to_decimal( Wire.read() );
 }
