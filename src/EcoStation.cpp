@@ -191,13 +191,12 @@ bool EcoStation::enter_maintenance_mode( void )
 
 	if ( !start_config_server() ) {
 
-		Serial.printf( "[STATION   ] [PANIC ] Failed to start WiFi AP, cannot enter maintenance mode.\n ");
+		Serial.printf( "[STATION   ] [PANIC] Failed to start WiFi AP, cannot enter maintenance mode.\n ");
 		return false;
 
 	} else
 
 		while ( true );
-
 }
 
 void EcoStation::fixup_timestamp( void )
@@ -207,7 +206,11 @@ void EcoStation::fixup_timestamp( void )
 		Serial.printf( "[STATION   ] [INFO ] RTC not present.\n");
 		return;
 	}
-	aws_rtc.begin();
+	if ( !aws_rtc.begin() ) {
+
+		Serial.printf( "[STATION   ] [ERROR] RTC not found.\n");
+		return;
+	}
 	struct tm timeinfo;
 	aws_rtc.get_datetime( &timeinfo );
 	time_t now = mktime( &timeinfo );
@@ -555,42 +558,42 @@ const char *EcoStation::OTA_message( ota_status_t code )
 
 void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
 {
-  unsigned long	sync_time_millis			= 0;
-  unsigned long	sync_time_timer				= 5000;
-  unsigned long	ota_millis					= 0;
-  unsigned long	ota_timer					= 30 * 60 * 1000;
-  unsigned long	data_push_millis			= 0;
-  int				data_push_timer				= config.get_parameter<int>( "push_freq" );
-  bool			auto_ota_updates			= config.get_parameter<bool>( "automatic_updates" );
+	unsigned long	sync_time_millis			= 0;
+	unsigned long	sync_time_timer				= 5000;
+	unsigned long	ota_millis					= 0;
+	unsigned long	ota_timer					= 30 * 60 * 1000;
+	unsigned long	data_push_millis			= 0;
+	int				data_push_timer				= config.get_parameter<int>( "push_freq" );
+	bool			auto_ota_updates			= config.get_parameter<bool>( "automatic_updates" );
 
-  if ( !config.get_parameter<bool>( "data_push" ))
-    data_push_timer = 0;
+	if ( !config.get_parameter<bool>( "data_push" ))
+		data_push_timer = 0;
 
-  while ( true ) {
+	while ( true ) {
 
-    if (( millis() - sync_time_millis ) > sync_time_timer ) {
+		if (( millis() - sync_time_millis ) > sync_time_timer ) {
 
-      station_data.health.current_heap_size =	xPortGetFreeHeapSize();
-      station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
-      sync_time( false );
-      sync_time_millis = millis();
-    }
+			station_data.health.current_heap_size =	xPortGetFreeHeapSize();
+			station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
+			sync_time( false );
+			sync_time_millis = millis();
+		}
 
-    if ( force_ota_update || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
+		if ( force_ota_update || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
 
-      force_ota_update = false;
-      check_ota_updates( true );
-      ota_millis = millis();
-    }
+			force_ota_update = false;
+			check_ota_updates( true );
+			ota_millis = millis();
+		}
 
-    if ( data_push_timer && (( millis() - data_push_millis ) > 1000 * data_push_timer )) {
+		if ( data_push_timer && (( millis() - data_push_millis ) > 1000 * data_push_timer )) {
 
-      send_data();
-      data_push_millis = millis();
-    }
+			send_data();
+			data_push_millis = millis();
+		}
 
-    delay( 500 );
-  }
+		delay( 500 );
+	}
 }
 
 bool EcoStation::poll_sensors( void )
@@ -608,59 +611,59 @@ template void EcoStation::print_config_string<>( const char *fmt );
 template<typename... Args>
 void EcoStation::print_config_string( const char *fmt, Args... args )
 {
-  etl::string<96>	string;
-  byte 			i;
-  int				l;
+	etl::string<96>	string;
+	byte 			i;
+	int				l;
 
-  string = format_helper( fmt, args... );
+	string = format_helper( fmt, args... );
 
-  l = string.size();
-  if ( l >= 0 ) {
+	l = string.size();
+	if ( l >= 0 ) {
 
-    string.append( string.capacity() - l - 4, ' ' );
-    string.append( "#\n" );
-  }
-  Serial.printf( "[STATION   ] [INFO ] %s", string.data() );
+		string.append( string.capacity() - l - 4, ' ' );
+		string.append( "#\n" );
+	}
+	Serial.printf( "[STATION   ] [INFO ] %s", string.data() );
 }
 
 void EcoStation::print_runtime_config( void )
 {
-  std::array<char, 108>	string;
-  const char			*root_ca = config.get_root_ca().data();
-  int					ca_pos = 0;
+	std::array<char, 108>	string;
+	const char			*root_ca = config.get_root_ca().data();
+	int					ca_pos = 0;
 
-  print_config_string( "# AP SSID      : %s", config.get_parameter<const char *>( "wifi_ap_ssid" ));
-  print_config_string( "# AP PASSWORD  : %s", config.get_parameter<const char *>( "wifi_ap_password" ));
-  print_config_string( "# AP IP        : %s", config.get_parameter<const char *>( "wifi_ap_ip" ));
-  print_config_string( "# AP Gateway   : %s", config.get_parameter<const char *>( "wifi_ap_gw" ));
-  print_config_string( "# STA SSID     : %s", config.get_parameter<const char *>( "wifi_sta_ssid" ));
-  print_config_string( "# STA PASSWORD : %s", config.get_parameter<const char *>( "wifi_sta_password" ));
-  print_config_string( "# STA IP       : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
-  print_config_string( "# STA Gateway  : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
-  print_config_string( "# SERVER       : %s", config.get_parameter<const char *>( "remote_server" ));
-  print_config_string( "# URL PATH     : /%s", config.get_parameter<const char *>( "url_path" ));
-  print_config_string( "# TZNAME       : %s", config.get_parameter<const char *>( "tzname" ));
+	print_config_string( "# AP SSID      : %s", config.get_parameter<const char *>( "wifi_ap_ssid" ));
+	print_config_string( "# AP PASSWORD  : %s", config.get_parameter<const char *>( "wifi_ap_password" ));
+	print_config_string( "# AP IP        : %s", config.get_parameter<const char *>( "wifi_ap_ip" ));
+	print_config_string( "# AP Gateway   : %s", config.get_parameter<const char *>( "wifi_ap_gw" ));
+	print_config_string( "# STA SSID     : %s", config.get_parameter<const char *>( "wifi_sta_ssid" ));
+	print_config_string( "# STA PASSWORD : %s", config.get_parameter<const char *>( "wifi_sta_password" ));
+	print_config_string( "# STA IP       : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
+	print_config_string( "# STA Gateway  : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
+	print_config_string( "# SERVER       : %s", config.get_parameter<const char *>( "remote_server" ));
+	print_config_string( "# URL PATH     : /%s", config.get_parameter<const char *>( "url_path" ));
+	print_config_string( "# TZNAME       : %s", config.get_parameter<const char *>( "tzname" ));
 
-  memset( string.data(), 0, string.size() );
-  int str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # ROOT CA      : " );
+	memset( string.data(), 0, string.size() );
+	int str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # ROOT CA      : " );
 
-  int ca_len = config.get_root_ca().size();
+	int ca_len = config.get_root_ca().size();
 
-  while ( ca_pos < ca_len ) {
+	while ( ca_pos < ca_len ) {
 
-    ca_pos = reformat_ca_root_line( string, str_len, ca_pos, ca_len, root_ca );
-    Serial.printf( "%s", string.data() );
-    memset( string.data(), 0, string.size() );
-    str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # " );
-  }
+		ca_pos = reformat_ca_root_line( string, str_len, ca_pos, ca_len, root_ca );
+		Serial.printf( "%s", string.data() );
+		memset( string.data(), 0, string.size() );
+		str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # " );
+	}
 
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
-  Serial.printf( "[STATION   ] [INFO ] # SENSORS & CONTROLS                                                                        #\n" );
-  Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # SENSORS & CONTROLS                                                                        #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
-  print_config_string( "# SQM/IRRADIANCE   : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
-  print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( aws_device_t::MLX_SENSOR ) ? "Yes" : "No" );
-  print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( aws_device_t::BME_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# SQM/IRRADIANCE   : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( aws_device_t::MLX_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( aws_device_t::BME_SENSOR ) ? "Yes" : "No" );
 
 }
 
@@ -697,85 +700,85 @@ void EcoStation::read_battery_level( void )
 
 int EcoStation::reformat_ca_root_line( std::array<char, 108> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
 {
-  int string_pos;
+	int string_pos;
 
-  strlcat( string.data(), root_ca + ca_pos, 103 );
-  for ( string_pos = str_len; string_pos < 103; string_pos++ ) {
+	strlcat( string.data(), root_ca + ca_pos, 103 );
+	for ( string_pos = str_len; string_pos < 103; string_pos++ ) {
 
-    if ( string[ string_pos ] == '\n' ) {
+		if ( string[ string_pos ] == '\n' ) {
 
-      if (( ca_pos < 103 ) || (( ca_len - ca_pos) < 103))
+			if (( ca_pos < 103 ) || (( ca_len - ca_pos) < 103))
 
-        string[ string_pos ] = ' ';
+				string[ string_pos ] = ' ';
 
-      else {
+			else {
 
-        memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 107 - string_pos - 3 );
-        ca_pos++;
+				memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 107 - string_pos - 3 );
+				ca_pos++;
 
-      }
-    }
-    ca_pos++;
-    if ( ca_pos > ca_len )
-      break;
-  }
-  ca_pos--;
-  for ( int j = string_pos; j < 103; string[ j ] = ' ', j++ );
-  memset( string.data() + 102, 0, 6 );
-  strlcat( string.data(), " #\n", string.size() - 1 );
-  return ca_pos;
+			}
+		}
+		ca_pos++;
+		if ( ca_pos > ca_len )
+			break;
+	}
+	ca_pos--;
+	for ( int j = string_pos; j < 103; string[ j ] = ' ', j++ );
+	memset( string.data() + 102, 0, 6 );
+	strlcat( string.data(), " #\n", string.size() - 1 );
+	return ca_pos;
 }
 
 void EcoStation::read_sensors( void )
 {
-  sensor_manager.read_sensors();
+	sensor_manager.read_sensors();
 
-  if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
+	if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
 
-    etl::string<64> string;
-    snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", station_data.health.battery_level );
+		etl::string<64> string;
+		snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", station_data.health.battery_level );
 
-    // Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
-    if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
-      send_alarm( "Low battery", string.data() );
+		// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
+		if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
+			send_alarm( "Low battery", string.data() );
 
-    low_battery_event_count++;
-    Serial.printf( "[CORE      ] [INFO ] %s", string.data() );
-  }
+		low_battery_event_count++;
+		Serial.printf( "[CORE      ] [INFO ] %s", string.data() );
+	}
 }
 
 void EcoStation::reboot( void )
 {
-  ESP.restart();
+	ESP.restart();
 }
 
 void EcoStation::report_unavailable_sensors( void )
 {
-  std::array<std::string, 7>	sensor_name			= { "MLX96014 ", "TSL2591 ", "BME280 ", "DB_METER" };
-  std::array<char, 96>			unavailable_sensors;
-  aws_device_t				j					= sensor_manager.get_available_sensors();
-  unsigned long				k;
+	std::array<std::string, 7>	sensor_name			= { "MLX96014 ", "TSL2591 ", "BME280 ", "DB_METER" };
+	std::array<char, 96>			unavailable_sensors;
+	aws_device_t				j					= sensor_manager.get_available_sensors();
+	unsigned long				k;
 
-  strlcpy( unavailable_sensors.data(), "Unavailable sensors: ", unavailable_sensors.size() );
+	strlcpy( unavailable_sensors.data(), "Unavailable sensors: ", unavailable_sensors.size() );
 
-  k = static_cast<unsigned long>( j );
-  for ( uint8_t i = 0; i < 7; i++ ) {
+	k = static_cast<unsigned long>( j );
+	for ( uint8_t i = 0; i < 7; i++ ) {
 
-    if ( ( k & aws_device_t::MLX_SENSOR ) == aws_device_t::NO_SENSOR )		// Flaky, MLX_SENSOR = 1, maybe need to rework this ....
-      strlcat( unavailable_sensors.data(), sensor_name[i].c_str(), 13 );
-    k >>= 1;
-  }
+		if ( ( k & aws_device_t::MLX_SENSOR ) == aws_device_t::NO_SENSOR )		// Flaky, MLX_SENSOR = 1, maybe need to rework this ....
+			strlcat( unavailable_sensors.data(), sensor_name[i].c_str(), 13 );
+		k >>= 1;
+	}
 
-  if ( debug_mode ) {
+	if ( debug_mode ) {
 
-    Serial.printf( "[STATION   ] [DEBUG] %s", unavailable_sensors.data() );
+		Serial.printf( "[STATION   ] [DEBUG] %s", unavailable_sensors.data() );
 
-    if ( j == ALL_SENSORS )
-      Serial.printf( "none.\n" );
-  }
+		if ( j == ALL_SENSORS )
+			Serial.printf( "none.\n" );
+	}
 
-  if ( j != ALL_SENSORS )
-    send_alarm( "[STATION   ] Unavailable sensors report", unavailable_sensors.data() );
+	if ( j != ALL_SENSORS )
+		send_alarm( "[STATION   ] Unavailable sensors report", unavailable_sensors.data() );
 }
 
 void EcoStation::send_alarm( const char *subject, const char *message )

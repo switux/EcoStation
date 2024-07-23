@@ -39,9 +39,12 @@ uint8_t AWSRTC::decimal_to_bcd( uint8_t i )
 	return ((( i / 10 ) * 16 ) + ( i % 10 ));
 }
 
-void AWSRTC::begin( void )
+bool AWSRTC::begin( void )
 {
  	Wire.begin();
+	Wire.beginTransmission( DS3231_I2C_ADDRESS );
+	uint8_t error = Wire.endTransmission();
+	return ( error == 0 );
 }
 
 void AWSRTC::set_datetime( time_t *now )

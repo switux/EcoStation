@@ -34,7 +34,7 @@ class AWSRTC
 
 	public:
 				AWSRTC( void );
-		void	begin( void );
+		bool	begin( void );
 		void	get_datetime( struct tm * );
 		void	set_datetime( time_t * );
 

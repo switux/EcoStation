@@ -22,10 +22,10 @@
 #include "lorawan.h"
 
 const lmic_pinmap lmic_pins = {
-  .nss	= GPIO_LORA_CS,
-  .rxtx = LMIC_UNUSED_PIN,
-  .rst	= GPIO_LORA_RST,
-  .dio	= { GPIO_LORA_DIO0, GPIO_LORA_DIO1, GPIO_LORA_DIO2 },
+	.nss	= GPIO_LORA_CS,
+	.rxtx	= LMIC_UNUSED_PIN,
+	.rst	= GPIO_LORA_RST,
+	.dio	= { GPIO_LORA_DIO0, GPIO_LORA_DIO1, GPIO_LORA_DIO2 },
 };
 
 RTC_DATA_ATTR lmic_t RTC_LMIC;
@@ -49,6 +49,13 @@ void os_getDevKey( u1_t* buf )
 bool AWSLoraWAN::begin( bool _debug_mode )
 {
 	debug_mode = _debug_mode;
+
+	digitalWrite( GPIO_LORA_CS, LOW );
+	SPI.transfer( 0x42 & 0x7F );
+	uint8_t value = SPI.transfer( 0x00 );
+	digitalWrite( GPIO_LORA_CS, HIGH );
+	if ( value != 0x12 )
+		return false;
 
 	os_init();
 	LMIC_reset();
