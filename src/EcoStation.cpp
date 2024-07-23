@@ -367,7 +367,7 @@ bool EcoStation::has_device( aws_device_t device )
 		case aws_device_t::MLX_SENSOR:
 		case aws_device_t::TSL_SENSOR:
 		case aws_device_t::BME_SENSOR:
-		case aws_device_t::SPL_SENSOR:
+		case aws_device_t::DBMETER_SENSOR:
 		case aws_device_t::RTC:
 		case aws_device_t::LORAWAN:
 			return config.get_has_device( device );
