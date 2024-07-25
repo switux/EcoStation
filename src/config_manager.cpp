@@ -93,8 +93,8 @@ void AWSConfig::list_files( void )
 
 	while( file ) {
 
-      Serial.printf( "[CONFIGMNGR] [DEBUG] Filename: %05d /%s\n", file.size(), file.name() );
-      file = root.openNextFile();
+		Serial.printf( "[CONFIGMNGR] [DEBUG] Filename: %05d /%s\n", file.size(), file.name() );
+		file = root.openNextFile();
 	}
 	close( root );
 }

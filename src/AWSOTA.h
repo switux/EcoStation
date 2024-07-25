@@ -63,7 +63,7 @@ class AWSOTA {
 		DeserializationError			deserialisation_status;
 		int								http_status;
 		DynamicJsonDocument				*json_ota_config		= nullptr;
-	    std::function<void (int, int)>	progress_callback		= nullptr;
+		std::function<void (int, int)>	progress_callback		= nullptr;
 		ota_status_t					status_code				= ota_status_t::UNKNOWN;
 
 		bool	do_ota_update( const char *, const char *, ota_action_t );

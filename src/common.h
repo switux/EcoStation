@@ -150,9 +150,9 @@ struct compact_data_t {
 
 	aws_device_t	available_sensors;
 
-    int16_t			battery_level;
-    uint32_t		uptime;
-    uint32_t		fs_free_space;
+	int16_t			battery_level;
+	uint32_t		uptime;
+	uint32_t		fs_free_space;
 
 	int				reset_reason;
 } __attribute__ ((packed));

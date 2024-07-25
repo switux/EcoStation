@@ -1,5 +1,5 @@
 /*
-  	config_manager.h
+	config_manager.h
 
 	(c) 2023-2024 F.Lesage
 
@@ -26,31 +26,31 @@
 #include "device.h"
 enum struct aws_iface : int {
 
-  wifi_ap,
-  wifi_sta
+	wifi_ap,
+	wifi_sta
 
 };
 
 enum struct aws_wifi_mode : int {
 
-  sta,
-  ap,
-  both
+	sta,
+	ap,
+	both
 
 };
 
 enum struct aws_pwr_src : int {
 
-  panel,
-  dc12v,
-  poe
+	panel,
+	dc12v,
+	poe
 
 };
 
 enum struct aws_ip_mode : int {
 
-  dhcp,
-  fixed
+	dhcp,
+	fixed
 
 };
 
@@ -83,50 +83,50 @@ const char				DEFAULT_OTA_URL[]						= "https://www.datamancers.net/images/AWS.j
 
 class AWSConfig {
 
-  public:
+	public:
 
-    AWSConfig( void );
-    bool					can_rollback( void );
-    uint32_t				get_fs_free_space( void );
-    template <typename T>
-    T 						get_parameter( const char * );
-    bool					get_has_device( aws_device_t );
-    etl::string_view		get_json_string_config( void );
-    etl::string_view		get_ota_sha256( void );
-    etl::string_view		get_pcb_version( void );
-    aws_pwr_src				get_pwr_mode( void );
-    etl::string_view		get_root_ca( void );
-    bool 					load( etl::string<64> &, bool );
-    void					reset_parameter( const char * );
-    bool					rollback( void );
-    bool					save_runtime_configuration( JsonVariant & );
-    bool 					update( JsonVariant &json );
+		AWSConfig( void );
+		bool					can_rollback( void );
+		uint32_t				get_fs_free_space( void );
+		template <typename T>
+		T						get_parameter( const char * );
+		bool					get_has_device( aws_device_t );
+		etl::string_view		get_json_string_config( void );
+		etl::string_view		get_ota_sha256( void );
+		etl::string_view		get_pcb_version( void );
+		aws_pwr_src				get_pwr_mode( void );
+		etl::string_view		get_root_ca( void );
+		bool 					load( etl::string<64> &, bool );
+		void					reset_parameter( const char * );
+		bool					rollback( void );
+		bool					save_runtime_configuration( JsonVariant & );
+		bool 					update( JsonVariant &json );
 
-  private:
+	private:
 
-    const size_t		MAX_CONFIG_FILE_SIZE	= 2048;
-    bool				debug_mode				= false;
-    aws_device_t		devices					= aws_device_t::NO_SENSOR;
-    uint32_t			fs_free_space			= 0;
-    bool				initialised				= false;
-    DynamicJsonDocument	*json_config;
-    etl::string<65>		ota_sha256;
-    etl::string<8>		pcb_version;
-    aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
-    etl::string<4096>	root_ca;
+		const size_t		MAX_CONFIG_FILE_SIZE	= 2048;
+		bool				debug_mode				= false;
+		aws_device_t		devices					= aws_device_t::NO_SENSOR;
+		uint32_t			fs_free_space			= 0;
+		bool				initialised				= false;
+		DynamicJsonDocument	*json_config;
+		etl::string<65>		ota_sha256;
+		etl::string<8>		pcb_version;
+		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
+		etl::string<4096>	root_ca;
 
-    template <typename T>
-    T 		get_aag_parameter( const char * );
-    void	list_files( void );
-    bool	read_config( etl::string<64> & );
-    bool	read_file( const char * );
-    bool	read_hw_info_from_nvs( etl::string<64> & );
-    void	read_root_ca( void );
-    void	set_missing_network_parameters_to_default_values( void );
-    void	set_missing_parameters_to_default_values( void );
-    void	set_root_ca( JsonVariant & );
-    void	update_fs_free_space( void );
-    bool	verify_entries( JsonVariant & );
+		template <typename T>
+		T		get_aag_parameter( const char * );
+		void	list_files( void );
+		bool	read_config( etl::string<64> & );
+		bool	read_file( const char * );
+		bool	read_hw_info_from_nvs( etl::string<64> & );
+		void	read_root_ca( void );
+		void	set_missing_network_parameters_to_default_values( void );
+		void	set_missing_parameters_to_default_values( void );
+		void	set_root_ca( JsonVariant & );
+		void	update_fs_free_space( void );
+		bool	verify_entries( JsonVariant & );
 };
 
 //
@@ -134,69 +134,69 @@ class AWSConfig {
 //
 constexpr unsigned int str2int( const char* str, int h = 0 )
 {
-  return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
+	return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
 }
 
 template <typename T>
 T AWSConfig::get_aag_parameter( const char *key )
 {
-  switch ( str2int( key )) {
-    case str2int( "k1" ):
-    case str2int( "k2" ):
-    case str2int( "k3" ):
-    case str2int( "k4" ):
-    case str2int( "k5" ):
-    case str2int( "k6" ):
-    case str2int( "k7" ):
-    case str2int( "cc_aws_cloudy" ):
-    case str2int( "cc_aws_overcast" ):
-    case str2int( "cc_aag_cloudy" ):
-    case str2int( "cc_aag_overcast" ):
-      return (*json_config)[key].as<T>();
-  }
-  Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
-  return 0;
+	switch ( str2int( key )) {
+		case str2int( "k1" ):
+		case str2int( "k2" ):
+		case str2int( "k3" ):
+		case str2int( "k4" ):
+		case str2int( "k5" ):
+		case str2int( "k6" ):
+		case str2int( "k7" ):
+		case str2int( "cc_aws_cloudy" ):
+		case str2int( "cc_aws_overcast" ):
+		case str2int( "cc_aag_cloudy" ):
+		case str2int( "cc_aag_overcast" ):
+		return (*json_config)[key].as<T>();
+	}
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
+	return 0;
 }
 
 template <typename T>
 T AWSConfig::get_parameter( const char *key )
 {
-  if (( *key == 'k' ) || ( !strncmp( key, "cc_", 3  )))
-    return get_aag_parameter<T>( key );
+	if (( *key == 'k' ) || ( !strncmp( key, "cc_", 3  )))
+		return get_aag_parameter<T>( key );
 
-  switch ( str2int( key )) {
+	switch ( str2int( key )) {
 
-    case str2int( "cloud_coverage_formula" ):
-    case str2int( "config_iface" ):
-    case str2int( "config_port" ):
-      return ( json_config->containsKey( key ) ? (*json_config)[key].as<T>() : 0 );
+		case str2int( "cloud_coverage_formula" ):
+		case str2int( "config_iface" ):
+		case str2int( "config_port" ):
+			return ( json_config->containsKey( key ) ? (*json_config)[key].as<T>() : 0 );
 
-    case str2int( "automatic_updates" ):
-    case str2int( "data_push" ):
-    case str2int( "msas_calibration_offset" ):
-    case str2int( "ota_url" ):
-    case str2int( "pref_iface" ):
-    case str2int( "push_freq" ):
-    case str2int( "remote_server" ):
-    case str2int( "tzname" ):
-    case str2int( "url_path" ):
-    case str2int( "wifi_ap_dns" ):
-    case str2int( "wifi_ap_gw" ):
-    case str2int( "wifi_ap_ip" ):
-    case str2int( "wifi_ap_password" ):
-    case str2int( "wifi_ap_ssid" ):
-    case str2int( "wifi_mode" ):
-    case str2int( "wifi_sta_dns" ):
-    case str2int( "wifi_sta_gw" ):
-    case str2int( "wifi_sta_ip" ):
-    case str2int( "wifi_sta_ip_mode" ):
-    case str2int( "wifi_sta_password" ):
-    case str2int( "wifi_sta_ssid" ):
-      return (*json_config)[key].as<T>();
+		case str2int( "automatic_updates" ):
+		case str2int( "data_push" ):
+		case str2int( "msas_calibration_offset" ):
+		case str2int( "ota_url" ):
+		case str2int( "pref_iface" ):
+		case str2int( "push_freq" ):
+		case str2int( "remote_server" ):
+		case str2int( "tzname" ):
+		case str2int( "url_path" ):
+		case str2int( "wifi_ap_dns" ):
+		case str2int( "wifi_ap_gw" ):
+		case str2int( "wifi_ap_ip" ):
+		case str2int( "wifi_ap_password" ):
+		case str2int( "wifi_ap_ssid" ):
+		case str2int( "wifi_mode" ):
+		case str2int( "wifi_sta_dns" ):
+		case str2int( "wifi_sta_gw" ):
+		case str2int( "wifi_sta_ip" ):
+		case str2int( "wifi_sta_ip_mode" ):
+		case str2int( "wifi_sta_password" ):
+		case str2int( "wifi_sta_ssid" ):
+			return (*json_config)[key].as<T>();
 
-  }
-  Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
-  return 0;
+	}
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
+	return 0;
 }
 
 #endif

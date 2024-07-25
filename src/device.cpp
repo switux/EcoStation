@@ -77,6 +77,6 @@ void Device::set_name( const char *str )
 void Device::uint64_t_to_uint8_t_array( uint64_t cmd, std::array<uint8_t,8> &cmd_array )
 {
 	uint8_t i = 0;
-    for ( i = 0; i < 8; i++ )
+	for ( i = 0; i < 8; i++ )
 		cmd_array[ i ] = (uint8_t)( ( cmd >> (56-(8*i))) & 0xff );
 }

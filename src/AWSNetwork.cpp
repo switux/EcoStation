@@ -191,19 +191,19 @@ bool AWSNetwork::wifi_post_content( const char *remote_server, etl::string<128> 
 	if ( !wifi_client.connect( remote_server, 443 )) {
 
 		if ( debug_mode )
-        	Serial.printf( "NOK.\n" );
+			Serial.printf( "NOK.\n" );
 		return false;
 	}
 
 	if ( debug_mode )
-    	Serial.printf( "OK.\n" );
+		Serial.printf( "OK.\n" );
 
 	http.begin( wifi_client, final_endpoint.data() );
 	http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
 	http.addHeader( "Content-Type", "application/json" );
 	http_code = http.POST( jsonString );
 	http.end();
-   	wifi_client.stop();
+	wifi_client.stop();
 
 	if ( http_code == 200 )
 		return true;
@@ -296,10 +296,10 @@ bool AWSNetwork::start_hotspot( void )
 		if ( ip )
 			cidr = strtok_r( nullptr, "/", &dummy );
 
-  		wifi_ap_ip.fromString( ip );
-  		wifi_ap_gw.fromString( config->get_parameter<const char *>( "wifi_ap_gw" ));
+		wifi_ap_ip.fromString( ip );
+		wifi_ap_gw.fromString( config->get_parameter<const char *>( "wifi_ap_gw" ));
 		// flawfinder: ignore
-  		wifi_ap_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) );
+		wifi_ap_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) );
 
 		WiFi.softAPConfig( wifi_ap_ip, wifi_ap_gw, wifi_ap_subnet );
 		Serial.printf( "[NETWORK   ] [INFO ] Started hotspot on SSID [%s/%s] and configuration server @ IP=%s/%s\n", ssid, password, ip, cidr );

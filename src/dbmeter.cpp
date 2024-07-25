@@ -30,10 +30,6 @@ bool dbmeter::get_version( void )
 bool dbmeter::get_device_id( void )
 {
 	return read_register( DBM_REG_ID3, 4, device_id );
-/*	device_id |= read_register( DBM_REG_ID2 ) << 8;
-	device_id |= read_register( DBM_REG_ID1 ) << 16;
-	device_id |= read_register( DBM_REG_ID0 ) << 24;
-	*/
 }
 
 bool dbmeter::control( dbm_control_t b )

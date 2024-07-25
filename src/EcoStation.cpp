@@ -376,7 +376,7 @@ bool EcoStation::has_device( aws_device_t device )
 			return config.get_has_device( device );
 		default:
 			return false;
-  }
+	}
 }
 
 bool EcoStation::initialise( void )
@@ -435,8 +435,8 @@ bool EcoStation::initialise( void )
 
 	if ( solar_panel ) {
 		
-  		// Issue #143
-  		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+		// Issue #143
+		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
 		if ( network.is_wifi_connected() || maintenance_mode )
 			enter_maintenance_mode();
@@ -480,7 +480,7 @@ bool EcoStation::initialise( void )
 
 void EcoStation::initialise_sensors( void )
 {
- 	sensor_manager.initialise_sensors();
+	sensor_manager.initialise_sensors();
 }
 
 bool EcoStation::is_ntp_synced( void )
@@ -519,41 +519,41 @@ void OTA_callback( int offset, int total_length )
 
 const char *EcoStation::OTA_message( ota_status_t code )
 {
-  ota_setup.status_code = code;
-  switch ( code ) {
+	ota_setup.status_code = code;
+	switch ( code ) {
 
-    case ota_status_t::UPDATE_AVAILABLE:
-      return "An update is available but wasn't installed";
+		case ota_status_t::UPDATE_AVAILABLE:
+			return "An update is available but wasn't installed";
 
-    case ota_status_t::NO_UPDATE_PROFILE_FOUND:
-      return "No profile matches";
+		case ota_status_t::NO_UPDATE_PROFILE_FOUND:
+			return "No profile matches";
 
-    case ota_status_t::NO_UPDATE_AVAILABLE:
-      return "Profile matched, but update not applicable";
+		case ota_status_t::NO_UPDATE_AVAILABLE:
+			return "Profile matched, but update not applicable";
 
-    case ota_status_t::UPDATE_OK:
-      return "An update was done, but no reboot";
+		case ota_status_t::UPDATE_OK:
+			return "An update was done, but no reboot";
 
-    case ota_status_t::HTTP_FAILED:
-      return "HTTP GET failure";
+		case ota_status_t::HTTP_FAILED:
+			return "HTTP GET failure";
 
-    case ota_status_t::WRITE_ERROR:
-      return "Write error";
+		case ota_status_t::WRITE_ERROR:
+			return "Write error";
 
-    case ota_status_t::JSON_PROBLEM:
-      return "Invalid JSON";
+		case ota_status_t::JSON_PROBLEM:
+			return "Invalid JSON";
 
-    case ota_status_t::OTA_UPDATE_FAIL:
-      return "Update failure (no OTA partition?)";
+		case ota_status_t::OTA_UPDATE_FAIL:
+			return "Update failure (no OTA partition?)";
 
-    case ota_status_t::CONFIG_ERROR:
-      return "OTA config has a problem";
+		case ota_status_t::CONFIG_ERROR:
+			return "OTA config has a problem";
 
-    case ota_status_t::UNKNOWN:
-      return "Undefined status";
+		case ota_status_t::UNKNOWN:
+			return "Undefined status";
 
-  }
-  return "Unhandled OTA status code";
+	}
+	return "Unhandled OTA status code";
 }
 
 void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
@@ -783,114 +783,114 @@ void EcoStation::report_unavailable_sensors( void )
 
 void EcoStation::send_alarm( const char *subject, const char *message )
 {
-  DynamicJsonDocument content( 512 );
-  // flawfinder: ignore
-  char jsonString[ 600 ];	// NOSONAR
-  content["subject"] = subject;
-  content["message"] = message;
+	DynamicJsonDocument content( 512 );
+	// flawfinder: ignore
+	char jsonString[ 600 ];	// NOSONAR
+	content["subject"] = subject;
+	content["message"] = message;
 
-  serializeJson( content, jsonString );
-  network.post_content( "alarm.php", strlen( "alarm.php" ), jsonString );
-  content.clear();
-  content["username"] = "TestStation";
-  content["content"] = message;
-  serializeJson( content, jsonString );
+	serializeJson( content, jsonString );
+	network.post_content( "alarm.php", strlen( "alarm.php" ), jsonString );
+	content.clear();
+	content["username"] = "TestStation";
+	content["content"] = message;
+	serializeJson( content, jsonString );
 }
 
 void EcoStation::send_backlog_data( void )
 {
-  etl::string<1024> line;
-  bool	empty = true;
+	etl::string<1024> line;
+	bool	empty = true;
 
 	unselect_spi_devices();
 	
-  if ( !SD.begin() ) {
+	if ( !SD.begin( GPIO_SD_CS ) ) {
 
-    Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
-    return;
-  }
+		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
+		return;
+	}
 
-  if ( !SD.exists( "/backlog.txt" )) {
+	if ( !SD.exists( "/backlog.txt" )) {
 
-    Serial.printf( "[STATION   ] [INFO ] No backlog file.\n" );
-    return;
+		Serial.printf( "[STATION   ] [INFO ] No backlog file.\n" );
+		return;
 
-  }
-  // flawfinder: ignore
-  File backlog = SD.open( "/backlog.txt", FILE_READ );
+	}
+	// flawfinder: ignore
+	File backlog = SD.open( "/backlog.txt", FILE_READ );
 
-  if ( !backlog ) {
+	if ( !backlog ) {
 
-    Serial.printf( "[STATION   ] [ERROR] Cannot open backlog file.\n" );
-    return;
-  }
+		Serial.printf( "[STATION   ] [ERROR] Cannot open backlog file.\n" );
+		return;
+	}
 
-  if ( !backlog.size() ) {
+	if ( !backlog.size() ) {
 
-    backlog.close();
+		backlog.close();
 
-    if ( debug_mode )
-      Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
-    return;
-  }
+		if ( debug_mode )
+			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
+		return;
+	}
 
-  // flawfinder: ignore
-  File new_backlog = SD.open( "/backlog.new", FILE_WRITE );
+	// flawfinder: ignore
+	File new_backlog = SD.open( "/backlog.new", FILE_WRITE );
 
-  while ( backlog.available() ) {
+	while ( backlog.available() ) {
 
-    int	i = backlog.readBytesUntil( '\n', line.data(), line.capacity() - 1 );
-    if ( !i )
-      break;
-    line[i] = '\0';
-    if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
+		int	i = backlog.readBytesUntil( '\n', line.data(), line.capacity() - 1 );
+		if ( !i )
+			break;
+		line[i] = '\0';
+		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
 
-      empty = false;
-      // flawfinder: ignore
-      if ( new_backlog.printf( "%s\n", line.data() ) != ( 1 + line.size() ))
-        Serial.printf( "[STATION   ] [ERROR] Could not write data into the backlog.\n" );
+			empty = false;
+			// flawfinder: ignore
+			if ( new_backlog.printf( "%s\n", line.data() ) != ( 1 + line.size() ))
+				Serial.printf( "[STATION   ] [ERROR] Could not write data into the backlog.\n" );
 
-    }
-  }
+		}
+	}
 
-  new_backlog.close();
-  backlog.close();
+	new_backlog.close();
+	backlog.close();
 
-  if ( !empty ) {
+	if ( !empty ) {
 
-    SD.remove( "/backlog.txt" );
-    SD.rename( "/backlog.new", "/backlog.txt" );
-    if ( debug_mode )
-      Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
+		SD.remove( "/backlog.txt" );
+		SD.rename( "/backlog.new", "/backlog.txt" );
+		if ( debug_mode )
+			Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
 
-  } else {
+	} else {
 
-    SD.remove( "/backlog.txt" );
-    SD.remove( "/backlog.new" );
-    if ( debug_mode )
-      Serial.printf( "[STATION   ] [DEBUG] Data backlog is empty.\n");
-  }
+		SD.remove( "/backlog.txt" );
+		SD.remove( "/backlog.new" );
+		if ( debug_mode )
+			Serial.printf( "[STATION   ] [DEBUG] Data backlog is empty.\n");
+	}
 }
 
 void EcoStation::send_data( void )
 {
-  bool lora_data_sent = false;
+	bool lora_data_sent = false;
 
-  if ( !solar_panel ) {
+	if ( !solar_panel ) {
 
-    while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE )
+		while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE )
 
-      if ( debug_mode )
-        Serial.printf( "[STATION   ] [DEBUG] Waiting for sensor data update to complete.\n" );
+			if ( debug_mode )
+				Serial.printf( "[STATION   ] [DEBUG] Waiting for sensor data update to complete.\n" );
 
-  }
+	}
 
-  get_json_sensor_data();
-  if ( debug_mode )
-    Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
-  sensor_manager.encode_sensor_data();
+	get_json_sensor_data();
+	if ( debug_mode )
+		Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
+	sensor_manager.encode_sensor_data();
 
-  // FIXME: make it config dependent
+	// FIXME: make it config dependent
 	network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
 	store_unsent_data( etl::string_view( json_sensor_data ));
 
@@ -903,103 +903,87 @@ void EcoStation::send_data( void )
 
 bool EcoStation::start_config_server( void )
 {
-  server.initialise( debug_mode );
-  return true;
+	server.initialise( debug_mode );
+	return true;
 }
 
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
-  bool ok;
+	bool ok;
 
-  unselect_spi_devices();
-  if ( !SD.begin( GPIO_SD_CS ) ) {
+	unselect_spi_devices();
+	if ( !SD.begin( GPIO_SD_CS ) ) {
 
-    Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
-    return false;
-  }
+		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
+		return false;
+	}
 
-  File backlog = SD.open( "/backlog.txt", FILE_APPEND );
-  if ( !backlog ) {
+	File backlog = SD.open( "/backlog.txt", FILE_APPEND );
+	if ( !backlog ) {
 
-    Serial.printf( "[STATION   ] [ERROR] Cannot store data until server is available.\n" );
-    return false;
-  }
+		Serial.printf( "[STATION   ] [ERROR] Cannot store data until server is available.\n" );
+		return false;
+	}
 
+	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + json_sensor_data_len )) )) {
 
-  if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + json_sensor_data_len )) )) {
+		if ( debug_mode )
+			Serial.printf( "[STATION   ] [DEBUG] Ok, data saved for when the server is available. data=[%s]\n", data.data() );
 
-    if ( debug_mode )
-      Serial.printf( "[STATION   ] [DEBUG] Ok, data saved for when the server is available. data=[%s]\n", data.data() );
+	} else
 
-  } else
+		Serial.printf( "[STATION   ] [ERROR] Could not save data.\n" );
 
-    Serial.printf( "[STATION   ] [ERROR] Could not save data.\n" );
-  backlog.close();
-/*
-  File file = SD.open( "/unsent.txt");
-  if (!file) {
-    Serial.println("Failed to open file for reading");
-    return ok;
-  }
-
-  Serial.print("Read from file: ");
-  while (file.available()) {
-    Serial.write(file.read());
-  }
-
-
-  file.close();
-
-*/
-  return ok;
+	backlog.close();
+	return ok;
 }
 
 bool EcoStation::sync_time( bool verbose )
 {
-  const char	*ntp_server = "pool.ntp.org";
-  uint8_t		ntp_retries = 5;
-  struct 		tm timeinfo;
+	const char	*ntp_server = "pool.ntp.org";
+	uint8_t		ntp_retries = 5;
+	struct 		tm timeinfo;
 
-  if ( debug_mode && verbose )
-    Serial.printf( "[STATION   ] [DEBUG] Connecting to NTP server " );
+	if ( debug_mode && verbose )
+		Serial.printf( "[STATION   ] [DEBUG] Connecting to NTP server " );
 
-  configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
+	configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
 
-  while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {	// NOSONAR
+	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {	// NOSONAR
 
-    if ( debug_mode && verbose )
-      Serial.printf( "." );
-    delay( 1000 );
-    configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
-  }
-  if ( debug_mode && verbose ) {
+		if ( debug_mode && verbose )
+			Serial.printf( "." );
+		delay( 1000 );
+		configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
+	}
+	if ( debug_mode && verbose ) {
 
-    Serial.printf( "\n[STATION   ] [DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
-    Serial.print( "Time and date: " );
-    Serial.print( &timeinfo, "%Y-%m-%d %H:%M:%S\n" );
-    Serial.printf( "\n" );
-  }
+		Serial.printf( "\n[STATION   ] [DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
+		Serial.print( "Time and date: " );
+		Serial.print( &timeinfo, "%Y-%m-%d %H:%M:%S\n" );
+		Serial.printf( "\n" );
+	}
 
-  if ( ntp_synced ) {
+	if ( ntp_synced ) {
 
-    time( &sensor_manager.get_sensor_data()->timestamp );
-    station_data.ntp_time.tv_sec = sensor_manager.get_sensor_data()->timestamp;
-    if ( ntp_time_misses )
-      ntp_time_misses = 0;
-    last_ntp_time = sensor_manager.get_sensor_data()->timestamp;
+		time( &sensor_manager.get_sensor_data()->timestamp );
+		station_data.ntp_time.tv_sec = sensor_manager.get_sensor_data()->timestamp;
+		if ( ntp_time_misses )
+			ntp_time_misses = 0;
+		last_ntp_time = sensor_manager.get_sensor_data()->timestamp;
 
-  } else {
+	} else {
 
-    // Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
-    ntp_time_misses++;
-    sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
-  }
-  return ntp_synced;
+		// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
+		ntp_time_misses++;
+		sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+	}
+	return ntp_synced;
 }
 
 void EcoStation::trigger_ota_update( void )
 {
-  force_ota_update = true;
+	force_ota_update = true;
 }
 
 void EcoStation::unselect_spi_devices( void )
@@ -1010,23 +994,23 @@ void EcoStation::unselect_spi_devices( void )
 
 bool EcoStation::update_config( JsonVariant &proposed_config )
 {
-  return config.save_runtime_configuration( proposed_config );
+	return config.save_runtime_configuration( proposed_config );
 }
 
 void EcoStation::wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wakeup_string )
 {
-  switch ( wakeup_reason ) {
+	switch ( wakeup_reason ) {
 
-    case ESP_SLEEP_WAKEUP_EXT0 :
-      snprintf( wakeup_string, 49, "Awakened by RTC IO: Rain event!" );
-      break;
+		case ESP_SLEEP_WAKEUP_EXT0 :
+			snprintf( wakeup_string, 49, "Awakened by RTC IO: Rain event!" );
+			break;
 
-    case ESP_SLEEP_WAKEUP_TIMER :
-      snprintf( wakeup_string, 49, "Awakened by timer" );
-      break;
+		case ESP_SLEEP_WAKEUP_TIMER :
+			snprintf( wakeup_string, 49, "Awakened by timer" );
+			break;
 
-    default :
-      snprintf( wakeup_string, 49, "Awakened by other: %d", wakeup_reason );
-      break;
-  }
+		default :
+			snprintf( wakeup_string, 49, "Awakened by other: %d", wakeup_reason );
+			break;
+	}
 }

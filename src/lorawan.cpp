@@ -53,7 +53,6 @@ bool AWSLoraWAN::begin( bool _debug_mode )
 /*	digitalWrite( GPIO_LORA_CS, LOW );
 	SPI.transfer( 0x42 & 0x7F );
 	uint8_t value = SPI.transfer( 0x00 );
-	digitalWrite( GPIO_LORA_CS, HIGH );
 	if ( value != 0x12 )
 		return false;
 */

@@ -128,7 +128,7 @@ class EcoStation {
 		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
-        etl::string_view	get_root_ca( void );
+		etl::string_view	get_root_ca( void );
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
 		uint32_t			get_uptime( void );

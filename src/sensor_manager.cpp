@@ -127,8 +127,8 @@ bool AWSSensorManager::initialise( AWSConfig *_config, compact_data_t *_compact_
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
 		xTaskCreatePinnedToCore(
 			[](void *param) {	// NOSONAR
-        	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
-        	    (*poll_proxy)( NULL );
+				std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
+				(*poll_proxy)( NULL );
 			}, "SensorManagerTask", 10000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
 	}
 	k[0] = config->get_parameter<int>( "k1" );

@@ -30,25 +30,25 @@
 
 class AWSLoraWAN
 {
-  private:
+	private:
 
-    bool		debug_mode		= false;
-	bool		joined 			= false;
-    osjob_t		sendjob;
-    uint8_t		mydata[64];
-    uint32_t	mylen;
-	
-    bool do_join( void );
+		bool		debug_mode		= false;
+		bool		joined 			= false;
+		osjob_t		sendjob;
+		uint8_t		mydata[64];
+		uint32_t	mylen;
 
-  public:
+		bool do_join( void );
 
-    AWSLoraWAN( void ) = default;
-    bool begin( bool );
-    void join( void );
-    void prepare_for_deep_sleep( int );
-    void restore_after_deep_sleep( void );
-    void send( osjob_t * );
-    void send_data( uint8_t *, uint8_t );
+	public:
+
+			AWSLoraWAN( void ) = default;
+		bool begin( bool );
+		void join( void );
+		void prepare_for_deep_sleep( int );
+		void restore_after_deep_sleep( void );
+		void send( osjob_t * );
+		void send_data( uint8_t *, uint8_t );
 
 };
 
