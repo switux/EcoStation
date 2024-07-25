@@ -50,13 +50,13 @@ bool AWSLoraWAN::begin( bool _debug_mode )
 {
 	debug_mode = _debug_mode;
 
-	digitalWrite( GPIO_LORA_CS, LOW );
+/*	digitalWrite( GPIO_LORA_CS, LOW );
 	SPI.transfer( 0x42 & 0x7F );
 	uint8_t value = SPI.transfer( 0x00 );
 	digitalWrite( GPIO_LORA_CS, HIGH );
 	if ( value != 0x12 )
 		return false;
-
+*/
 	os_init();
 	LMIC_reset();
 	restore_after_deep_sleep();
