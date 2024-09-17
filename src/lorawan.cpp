@@ -18,7 +18,6 @@
 */
 
 #include "gpio_config.h"
-#include "lorawan_setup.h"
 #include "lorawan.h"
 #include "common.h"
 #include "EcoStation.h"

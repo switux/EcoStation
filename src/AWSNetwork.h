@@ -24,8 +24,6 @@
 #include <ESPping.h>
 #include "lorawan.h"
 
-#include "lorawan_setup.h"
-
 class AWSNetwork {
 
 	private:

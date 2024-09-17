@@ -28,6 +28,10 @@
 #include <lmic.h>
 #include <hal/hal.h>
 
+static uint8_t			DEVEUI[8]	= { 0x00 };
+static uint8_t			APPKEY[16]	= { 0x00 };
+static const uint8_t	APPEUI[8]	= { 0x00 };
+
 class AWSLoraWAN
 {
 	private:
