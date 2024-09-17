@@ -53,7 +53,8 @@ class AWSNetwork {
 					AWSNetwork( void );
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
-		uint8_t		*get_wifi_mac( void );	
+		uint8_t		*get_wifi_mac( void );
+		bool		has_joined( void );
 		void		initialise( AWSConfig *, bool );
 		bool		initialise_wifi( void );
 		bool		is_wifi_connected( void );

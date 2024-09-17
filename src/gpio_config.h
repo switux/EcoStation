@@ -35,6 +35,9 @@
 #define GPIO_BAT_ADC			GPIO_NUM_4
 #define GPIO_BAT_ADC_EN			GPIO_NUM_26
 
+// Solar panel voltage
+#define GPIO_PANEL_ADC			GPIO_NUM_2
+
 // SD Card reader
 #define	GPIO_SD_MOSI			GPIO_NUM_23	// Module MOSI pin
 #define	GPIO_SD_MISO			GPIO_NUM_19	// Module MISO pin

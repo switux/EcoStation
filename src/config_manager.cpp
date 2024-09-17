@@ -38,6 +38,17 @@ AWSConfig::AWSConfig( void )
 	json_config = new DynamicJsonDocument( 3072 );
 }
 
+template <size_t N>
+etl::string<N * 2> AWSConfig::bytes_to_hex_string(const uint8_t* bytes, size_t length) const {
+    etl::string<N * 2> hex_str;
+    for (size_t i = 0; i < length; ++i) {
+		uint8_t byte = bytes[i];
+        hex_str.push_back(nibble_to_hex_char((byte >> 4) & 0x0F));
+        hex_str.push_back(nibble_to_hex_char(byte & 0x0F));
+	}
+    return hex_str;
+}
+
 bool AWSConfig::can_rollback( void )
 {
 	return _can_rollback;
@@ -81,6 +92,28 @@ etl::string_view AWSConfig::get_json_string_config( void )
 	return etl::string_view( json_string.data() );
 }
 
+uint8_t *AWSConfig::get_lora_appkey( void )
+{
+	return lora_appkey;
+}
+
+etl::string_view AWSConfig::get_lora_appkey_str( void )
+{
+	auto hex_string	= bytes_to_hex_string<16>( lora_appkey, 16 );
+	return hex_string;
+}
+
+uint8_t *AWSConfig::get_lora_deveui( void )
+{
+	return lora_eui;
+}
+
+etl::string_view AWSConfig::get_lora_deveui_str( void )
+{
+	auto hex_string	= bytes_to_hex_string<8>( lora_eui, 8 );
+	return hex_string;
+}
+
 etl::string_view AWSConfig::get_ota_sha256( void )
 {
 	return etl::string_view( ota_sha256 );
@@ -115,6 +148,10 @@ bool AWSConfig::load( etl::string<64> &firmware_sha256, bool _debug_mode  )
 	update_fs_free_space();
 
 	return read_config( firmware_sha256 );
+}
+
+char AWSConfig::nibble_to_hex_char(uint8_t nibble) const {
+    return (nibble < 10) ? ('0' + nibble) : ('A' + nibble - 10);
 }
 
 bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
@@ -253,11 +290,33 @@ bool AWSConfig::read_hw_info_from_nvs( etl::string<64> &firmware_sha56 )
 	if ( ( x = nvs.getChar( "has_rtc", 127 )) == 127 ) {
 
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get RTC presence from NVS. Please contact support.\n" );
-		nvs.end();
-		return false;
+
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::RTC;
 
+	if ( ( x = nvs.getChar( "has_lorawan", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN presence from NVS. Please contact support.\n" );
+	}
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LORAWAN;
+
+	if ( x ) {
+
+		if ( !nvs.getBytes( "lorawan_deveui", lora_eui, 8 )) {
+
+			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN DEVEUI from NVS. Please contact support.\n" );
+			nvs.end();
+			return false;
+		}
+
+		if ( !nvs.getBytes( "lorawan_appkey", lora_appkey, 16 )) {
+
+			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN APPKEY from NVS. Please contact support.\n" );
+			nvs.end();
+			return false;
+		}
+
+	}
 	nvs.end();
 	return true;
 }

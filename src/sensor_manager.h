@@ -56,37 +56,37 @@ class AWSSensorManager {
 		std::array<int,7>	k;
 		AWSConfig 			*config				= nullptr;
 
-		aws_device_t		available_sensors	= aws_device_t::NO_SENSOR;
-		compact_data_t		*compact_data;
-		sensor_data_t		sensor_data;
-		bool				debug_mode			= false;
-		bool				initialised			= false;
-		bool				solar_panel			= false;
-		TaskHandle_t		sensors_task_handle;
-		SemaphoreHandle_t	i2c_mutex			= nullptr;
-		uint32_t			polling_ms_interval	= DEFAULT_SENSOR_POLLING_MS_INTERVAL;
+		aws_device_t			available_sensors	= aws_device_t::NO_SENSOR;
+		compact_data_t			*compact_data;
+		sensor_data_t			sensor_data;
+		bool					debug_mode			= false;
+		bool					initialised			= false;
+		bool					solar_panel			= false;
+		TaskHandle_t			sensors_task_handle;
+		SemaphoreHandle_t		i2c_mutex			= nullptr;
+		uint32_t				polling_ms_interval	= DEFAULT_SENSOR_POLLING_MS_INTERVAL;
 
 	public:
-							AWSSensorManager( void );
-		bool				begin( void );
-		aws_device_t		get_available_sensors( void );
-		bool				get_debug_mode( void );
-		SemaphoreHandle_t	get_i2c_mutex( void );
-		sensor_data_t		*get_sensor_data( void );
-		bool				initialise( AWSConfig *, compact_data_t * );
-		void				initialise_sensors( void );
-		bool				poll_sensors( void );
-		void				read_sensors( void );
-		void				resume( void );
-		bool				sensor_is_available( aws_device_t );
-		void				set_debug_mode( bool );
-		void				set_solar_panel( bool );
-		void				encode_sensor_data( void );
-		void				suspend( void );
+    							AWSSensorManager( void );
+		bool					begin( void );
+		aws_device_t			get_available_sensors( void );
+		bool					get_debug_mode( void );
+		SemaphoreHandle_t		get_i2c_mutex( void );
+		sensor_data_t			*get_sensor_data( void );
+		bool					initialise( AWSConfig *, compact_data_t * );
+		void					initialise_sensors( void );
+		bool					poll_sensors( void );
+		void					read_sensors( void );
+		void					resume( void );
+		bool					sensor_is_available( aws_device_t );
+		void					set_debug_mode( bool );
+		void					set_solar_panel( bool );
+		void					encode_sensor_data( void );
+		void					suspend( void );
 
 	private:
 
-bool sync_time( void );
+		bool sync_time( void );
 
 		void	initialise_dbmeter( void );
 		void	initialise_BME( void );

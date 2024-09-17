@@ -41,7 +41,7 @@ uint8_t AWSRTC::decimal_to_bcd( uint8_t i )
 
 bool AWSRTC::begin( void )
 {
- 	Wire.begin();
+	Wire.begin();
 	Wire.beginTransmission( DS3231_I2C_ADDRESS );
 	uint8_t error = Wire.endTransmission();
 	return ( error == 0 );
@@ -50,7 +50,7 @@ bool AWSRTC::begin( void )
 void AWSRTC::set_datetime( time_t *now )
 {
 	struct tm	dummy;
- 	struct tm	*utc_time = gmtime_r( now, &dummy );
+	struct tm	*utc_time = gmtime_r( now, &dummy );
 
 	Wire.beginTransmission( DS3231_I2C_ADDRESS );
 	Wire.write( 0 );

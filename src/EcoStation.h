@@ -42,6 +42,12 @@ const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in m
 const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
 const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
+const unsigned short	PANEL_V_MAX		= 7000;
+const unsigned int		V_DIV_R3		= 470000;
+const unsigned int		V_DIV_R4		= 390000;
+const float				PANEL_V_MAX_IN	= ( PANEL_V_MAX*V_DIV_R4 )/( V_DIV_R3+V_DIV_R4 );
+const unsigned short	ADC_PANEL_V_MAX	= ( PANEL_V_MAX_IN*ADC_MAX / VCC );
+
 enum struct aws_ip_info : uint8_t
 {
 	ETH_DNS,
@@ -108,7 +114,7 @@ class EcoStation {
 		void			print_config_string( const char *, Args... );
 		void			print_runtime_config( void );
 		void			read_battery_level( void );
-		int				reformat_ca_root_line( std::array<char,108> &, int, int, int, const char * );
+		int				reformat_ca_root_line( std::array<char,116> &, int, int, int, const char * );
 		void			send_backlog_data( void );
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
@@ -119,8 +125,8 @@ class EcoStation {
 
 							EcoStation( void );
 		void				check_ota_updates( bool );
-		int16_t			float_to_int16_encode( float, float, float );
-		int32_t			float_to_int32_encode( float, float, float );
+		int16_t				float_to_int16_encode( float, float, float );
+		int32_t				float_to_int32_encode( float, float, float );
 		bool				get_debug_mode( void );
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );

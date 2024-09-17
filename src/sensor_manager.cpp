@@ -444,7 +444,7 @@ void AWSSensorManager::set_solar_panel( bool b )
 
 		pinMode( GPIO_BAT_ADC_EN, OUTPUT );
 		pinMode( GPIO_BAT_ADC, INPUT );
-
+		pinMode( GPIO_PANEL_ADC, INPUT );
 	}
 }
 

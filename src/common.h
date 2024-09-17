@@ -29,9 +29,9 @@
 #include "build_id.h"
 
 // Force DEBUG output even if not activated by external button
-const byte DEBUG_MODE = 1;
+const uint8_t DEBUG_MODE = 1;
 
-#define COMPACT_DATA_FORMAT_VERSION	0x01
+#define COMPACT_DATA_FORMAT_VERSION	0x02
 
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
@@ -42,9 +42,9 @@ enum class aws_device_t : unsigned long {
 	MLX_SENSOR			= 0x00000001,
 	TSL_SENSOR			= 0x00000002,
 	BME_SENSOR			= 0x00000004,
-	LTE				= 0x00000400,
-	DBMETER_SENSOR			= 0x00000800,
-	RTC				= 0x00001000,
+	LTE					= 0x00000400,
+	DBMETER_SENSOR		= 0x00000800,
+	RTC					= 0x00001000,
 	SDCARD				= 0x00002000,
 	LORAWAN				= 0x00004000
 };
@@ -64,6 +64,7 @@ struct health_data_t {
 
 	float			battery_level;
 	uint32_t		fs_free_space;
+	float			panel_voltage;
 	uint32_t		uptime;
 	uint32_t		init_heap_size;
 	uint32_t		current_heap_size;
@@ -151,6 +152,7 @@ struct compact_data_t {
 	aws_device_t	available_sensors;
 
 	int16_t			battery_level;
+	int16_t			panel_voltage;
 	uint32_t		uptime;
 	uint32_t		fs_free_space;
 

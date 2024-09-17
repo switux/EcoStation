@@ -85,13 +85,17 @@ class AWSConfig {
 
 	public:
 
-		AWSConfig( void );
+								AWSConfig( void );
 		bool					can_rollback( void );
 		uint32_t				get_fs_free_space( void );
 		template <typename T>
-		T						get_parameter( const char * );
+		T 						get_parameter( const char * );
 		bool					get_has_device( aws_device_t );
 		etl::string_view		get_json_string_config( void );
+		uint8_t					*get_lora_appkey( void );
+		etl::string_view		get_lora_appkey_str( void );
+		uint8_t					*get_lora_deveui( void );
+		etl::string_view		get_lora_deveui_str( void );
 		etl::string_view		get_ota_sha256( void );
 		etl::string_view		get_pcb_version( void );
 		aws_pwr_src				get_pwr_mode( void );
@@ -111,22 +115,26 @@ class AWSConfig {
 		bool				initialised				= false;
 		DynamicJsonDocument	*json_config;
 		etl::string<65>		ota_sha256;
+		uint8_t				lora_appkey[16];
+		uint8_t				lora_eui[8];
 		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>	root_ca;
-
+		template<size_t N>
+		etl::string<N*2>	bytes_to_hex_string( const uint8_t *, size_t  ) const;
 		template <typename T>
-		T		get_aag_parameter( const char * );
-		void	list_files( void );
-		bool	read_config( etl::string<64> & );
-		bool	read_file( const char * );
-		bool	read_hw_info_from_nvs( etl::string<64> & );
-		void	read_root_ca( void );
-		void	set_missing_network_parameters_to_default_values( void );
-		void	set_missing_parameters_to_default_values( void );
-		void	set_root_ca( JsonVariant & );
-		void	update_fs_free_space( void );
-		bool	verify_entries( JsonVariant & );
+		T 					get_aag_parameter( const char * );
+		void				list_files( void );
+		char				nibble_to_hex_char(uint8_t) const;
+		bool				read_config( etl::string<64> & );
+		bool				read_file( const char * );
+		bool				read_hw_info_from_nvs( etl::string<64> & );
+		void				read_root_ca( void );
+		void				set_missing_network_parameters_to_default_values( void );
+		void				set_missing_parameters_to_default_values( void );
+		void				set_root_ca( JsonVariant & );
+		void				update_fs_free_space( void );
+		bool				verify_entries( JsonVariant & );
 };
 
 //
@@ -152,7 +160,7 @@ T AWSConfig::get_aag_parameter( const char *key )
 		case str2int( "cc_aws_overcast" ):
 		case str2int( "cc_aag_cloudy" ):
 		case str2int( "cc_aag_overcast" ):
-		return (*json_config)[key].as<T>();
+			return (*json_config)[key].as<T>();
 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;

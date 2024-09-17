@@ -31,6 +31,9 @@ EcoStation station;
 
 void setup()
 {
+    btStop();
+	setCpuFrequencyMhz( 80 );
+
 	Serial.begin( 115200 );
 	delay( 500 );
 	        
@@ -46,6 +49,11 @@ void setup()
 		station.send_data();
 		station.prepare_for_deep_sleep( static_cast<int>( US_SLEEP / 1000000 ) );
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
+		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF );
+//		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF );
+		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON );
+		esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
+
 		Serial.printf( "[CORE      ] [INFO ] Entering sleep mode.\n" );
 		esp_deep_sleep_start();
 

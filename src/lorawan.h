@@ -37,18 +37,19 @@ class AWSLoraWAN
 		osjob_t		sendjob;
 		uint8_t		mydata[64];
 		uint32_t	mylen;
-
+	
 		bool do_join( void );
 
 	public:
 
-			AWSLoraWAN( void ) = default;
-		bool begin( bool );
-		void join( void );
-		void prepare_for_deep_sleep( int );
-		void restore_after_deep_sleep( void );
-		void send( osjob_t * );
-		void send_data( uint8_t *, uint8_t );
+				AWSLoraWAN( void ) = default;
+		bool	begin( const uint8_t *, const uint8_t *, bool );
+		void	join( void );
+		bool	has_joined( void );
+		void	prepare_for_deep_sleep( int );
+		void	restore_after_deep_sleep( void );
+		void	send( osjob_t * );
+		void	send_data( uint8_t *, uint8_t );
 
 };
 

@@ -134,9 +134,9 @@ void EcoStation::display_banner()
 	if ( !debug_mode )
 		return;
 
-	uint8_t	*wifi_mac = network.get_wifi_mac();
+	uint8_t	*wifi_mac	= network.get_wifi_mac();
 	int		i;
-
+	    
 	Serial.printf( "\n[STATION   ] [INFO ] #############################################################################################\n" );
 	Serial.printf( "[STATION   ] [INFO ] # EcoStation                                                                                #\n" );
 	Serial.printf( "[STATION   ] [INFO ] #  (c) lesage@loads.ch                                                                      #\n" );
@@ -147,7 +147,9 @@ void EcoStation::display_banner()
 	print_config_string( "# Board              : %s", ota_setup.board.data() );
 	print_config_string( "# Model              : %s", ota_setup.config.data() );
 	print_config_string( "# WIFI Mac           : %s", ota_setup.device.data() );
-	print_config_string( "# LoRaWAN            : %s", "LoRaWAN" );
+	print_config_string( "# LoRaWAN            : %s", config.get_has_device( aws_device_t::LORAWAN ) ? "Yes" : "No" );
+	if ( config.get_has_device( aws_device_t::LORAWAN ) )
+  		print_config_string( "# LoRaWAN DEVEUI     : %s", config.get_lora_deveui_str().data() );
 	print_config_string( "# Firmware           : %s", ota_setup.version.data() );
 
 	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
@@ -158,6 +160,7 @@ void EcoStation::display_banner()
 
 		print_config_string( "# 3.3V SWITCH   : %d", GPIO_ENABLE_3_3V );
 		print_config_string( "# BAT LVL       : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
+		print_config_string( "# PANEL VOLTAGE : ADC=%d", GPIO_PANEL_ADC );
 
 	}
 	print_config_string( "# DEBUG/CONFIG  : %d", GPIO_DEBUG );
@@ -191,7 +194,7 @@ bool EcoStation::enter_maintenance_mode( void )
 
 	if ( !start_config_server() ) {
 
-		Serial.printf( "[STATION   ] [PANIC] Failed to start WiFi AP, cannot enter maintenance mode.\n ");
+		Serial.printf( "[STATION   ] [PANIC ] Failed to start WiFi AP, cannot enter maintenance mode.\n ");
 		return false;
 
 	} else
@@ -268,6 +271,7 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 
 	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
 	json_data["battery_level"] = station_data.health.battery_level;
+	json_data["panel_voltage"] = station_data.health.panel_voltage;
 	json_data["timestamp"] = sensor_data->timestamp;
 	json_data["temperature"] = sensor_data->weather.temperature;
 	json_data["pressure"] = sensor_data->weather.pressure;
@@ -628,24 +632,33 @@ void EcoStation::print_config_string( const char *fmt, Args... args )
 
 void EcoStation::print_runtime_config( void )
 {
-	std::array<char, 108>	string;
+	std::array<char, 116>	string;
 	const char			*root_ca = config.get_root_ca().data();
 	int					ca_pos = 0;
+	    
+	if ( config.get_has_device( aws_device_t::LORAWAN ) ) {
 
-	print_config_string( "# AP SSID      : %s", config.get_parameter<const char *>( "wifi_ap_ssid" ));
-	print_config_string( "# AP PASSWORD  : %s", config.get_parameter<const char *>( "wifi_ap_password" ));
-	print_config_string( "# AP IP        : %s", config.get_parameter<const char *>( "wifi_ap_ip" ));
-	print_config_string( "# AP Gateway   : %s", config.get_parameter<const char *>( "wifi_ap_gw" ));
-	print_config_string( "# STA SSID     : %s", config.get_parameter<const char *>( "wifi_sta_ssid" ));
-	print_config_string( "# STA PASSWORD : %s", config.get_parameter<const char *>( "wifi_sta_password" ));
-	print_config_string( "# STA IP       : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
-	print_config_string( "# STA Gateway  : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
-	print_config_string( "# SERVER       : %s", config.get_parameter<const char *>( "remote_server" ));
-	print_config_string( "# URL PATH     : /%s", config.get_parameter<const char *>( "url_path" ));
-	print_config_string( "# TZNAME       : %s", config.get_parameter<const char *>( "tzname" ));
+		print_config_string( "# LoRaWAN APPKEY : %s", config.get_lora_appkey_str().data() );
+		if ( network.has_joined() )
+			print_config_string( "# LoRaWAN DEVADDR: 0x%lx", LMIC.devaddr );
+		else
+			print_config_string( "# LoRaWAN DEVADDR: <not joined>" );
+
+	}
+	print_config_string( "# AP SSID        : %s", config.get_parameter<const char *>( "wifi_ap_ssid" ));
+	print_config_string( "# AP PASSWORD    : %s", config.get_parameter<const char *>( "wifi_ap_password" ));
+	print_config_string( "# AP IP          : %s", config.get_parameter<const char *>( "wifi_ap_ip" ));
+	print_config_string( "# AP Gateway     : %s", config.get_parameter<const char *>( "wifi_ap_gw" ));
+	print_config_string( "# STA SSID       : %s", config.get_parameter<const char *>( "wifi_sta_ssid" ));
+	print_config_string( "# STA PASSWORD   : %s", config.get_parameter<const char *>( "wifi_sta_password" ));
+	print_config_string( "# STA IP         : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
+	print_config_string( "# STA Gateway    : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
+	print_config_string( "# SERVER         : %s", config.get_parameter<const char *>( "remote_server" ));
+	print_config_string( "# URL PATH       : /%s", config.get_parameter<const char *>( "url_path" ));
+	print_config_string( "# TZNAME         : %s", config.get_parameter<const char *>( "tzname" ));
 
 	memset( string.data(), 0, string.size() );
-	int str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # ROOT CA      : " );
+	int str_len = snprintf( string.data(), string.size() - 1, "[STATION   ] [INFO ] # ROOT CA        : " );
 
 	int ca_len = config.get_root_ca().size();
 
@@ -664,7 +677,6 @@ void EcoStation::print_runtime_config( void )
 	print_config_string( "# SQM/IRRADIANCE   : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( aws_device_t::MLX_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( aws_device_t::BME_SENSOR ) ? "Yes" : "No" );
-
 }
 
 void EcoStation::read_battery_level( void )
@@ -673,19 +685,29 @@ void EcoStation::read_battery_level( void )
 		return;
 
 	int	adc_value = 0;
+	int adc_value2 = 0;
 
 	WiFi.mode ( WIFI_OFF );
 
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
-	// FIXME: needed?
-	delay( 500 );
 
-	for ( uint8_t i = 0; i < 5; i++ )
+	for ( uint8_t i = 0; i < 5; i++ ) {
+
+		delay( 1000 );
 		adc_value += analogRead( GPIO_BAT_ADC );
+		adc_value2 += analogRead( GPIO_PANEL_ADC );
+	}
 
-	adc_value = adc_value / 5;
+	digitalWrite( GPIO_BAT_ADC_EN, LOW );
+
+	adc_value /= 5;
 	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
 	compact_data.battery_level = float_to_int16_encode( station_data.health.battery_level, 0, 100 );
+	
+	adc_value2 /= 5;
+	float adc_v_in = adc_value2 * VCC / ADC_PANEL_V_MAX;
+	station_data.health.panel_voltage = ( adc_v_in * ( V_DIV_R3 + V_DIV_R4 )/ V_DIV_R4 ) / 1000.F;
+	compact_data.panel_voltage = float_to_int16_encode( station_data.health.panel_voltage, 0, 100 );
 
 	if ( debug_mode ) {
 
@@ -693,39 +715,31 @@ void EcoStation::read_battery_level( void )
 		float adc_v_in = adc_value * VCC / ADC_V_MAX;
 		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
 		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", station_data.health.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
+		Serial.printf( "[STATION   ] [DEBUG] Solar panel: ADC=%d (%1.3fV) : input voltage=%1.3fV\n", adc_value, adc_v_in / 1000.F, station_data.health.panel_voltage );
 	}
-
-	digitalWrite( GPIO_BAT_ADC_EN, LOW );
 }
 
-int EcoStation::reformat_ca_root_line( std::array<char, 108> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
+int EcoStation::reformat_ca_root_line( std::array<char, 116> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
 {
 	int string_pos;
 
-	strlcat( string.data(), root_ca + ca_pos, 103 );
-	for ( string_pos = str_len; string_pos < 103; string_pos++ ) {
+	strlcat( string.data(), root_ca + ca_pos, 113 );
+	for ( string_pos = str_len; string_pos < 113; string_pos++ ) {
 
 		if ( string[ string_pos ] == '\n' ) {
 
-			if (( ca_pos < 103 ) || (( ca_len - ca_pos) < 103))
+			memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 115 - string_pos - 3 );
+			ca_pos++;
 
-				string[ string_pos ] = ' ';
-
-			else {
-
-				memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 107 - string_pos - 3 );
-				ca_pos++;
-
-			}
 		}
 		ca_pos++;
 		if ( ca_pos > ca_len )
 			break;
 	}
 	ca_pos--;
-	for ( int j = string_pos; j < 103; string[ j ] = ' ', j++ );
-	memset( string.data() + 102, 0, 6 );
-	strlcat( string.data(), " #\n", string.size() - 1 );
+	for ( int j = string_pos; j < 113; string[ j ] = ' ', j++ );
+	memset( string.data() + 112, 0, 3 );
+	strlcat( string.data(), " #\n", string.size() );
 	return ca_pos;
 }
 
@@ -803,7 +817,7 @@ void EcoStation::send_backlog_data( void )
 	bool	empty = true;
 
 	unselect_spi_devices();
-	
+
 	if ( !SD.begin( GPIO_SD_CS ) ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
@@ -890,7 +904,7 @@ void EcoStation::send_data( void )
 		Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
 	sensor_manager.encode_sensor_data();
 
-	// FIXME: make it config dependent
+	// FIXME: make it config dependent (LoRa)
 	network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
 	store_unsent_data( etl::string_view( json_sensor_data ));
 
@@ -912,6 +926,7 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 	bool ok;
 
 	unselect_spi_devices();
+
 	if ( !SD.begin( GPIO_SD_CS ) ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
@@ -921,18 +936,18 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 	File backlog = SD.open( "/backlog.txt", FILE_APPEND );
 	if ( !backlog ) {
 
-		Serial.printf( "[STATION   ] [ERROR] Cannot store data until server is available.\n" );
+		Serial.printf( "[STATION   ] [ERROR] Cannot store data.\n" );
 		return false;
 	}
 
 	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + json_sensor_data_len )) )) {
 
 		if ( debug_mode )
-			Serial.printf( "[STATION   ] [DEBUG] Ok, data saved for when the server is available. data=[%s]\n", data.data() );
+			Serial.printf( "[STATION   ] [DEBUG] Data stored: [%s]\n", data.data() );
 
 	} else
 
-		Serial.printf( "[STATION   ] [ERROR] Could not save data.\n" );
+		Serial.printf( "[STATION   ] [ERROR] Could not store data.\n" );
 
 	backlog.close();
 	return ok;
@@ -973,10 +988,11 @@ bool EcoStation::sync_time( bool verbose )
 		last_ntp_time = sensor_manager.get_sensor_data()->timestamp;
 
 	} else {
-
+		// FIXME: check if RTC is available
 		// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
 		ntp_time_misses++;
 		sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+
 	}
 	return ntp_synced;
 }

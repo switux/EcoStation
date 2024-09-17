@@ -29,6 +29,7 @@
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "defaults.h"
+#include "gpio_config.h"
 #include "common.h"
 #include "config_manager.h"
 #include "config_server.h"
@@ -48,8 +49,8 @@ void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 void AWSWebServer::get_backlog( AsyncWebServerRequest *request )
 {
 	station.unselect_spi_devices();
-
-	if ( !SD.begin()) {
+	
+	if ( !SD.begin( GPIO_SD_CS )) {
 
 		etl::string<64> msg;
 		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open SDCard to serve [backlog.txt]." );
@@ -177,8 +178,8 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 void AWSWebServer::send_sdcard_file( AsyncWebServerRequest *request )
 {
 	station.unselect_spi_devices();
-
-	if ( !SD.begin()) {
+	
+	if ( !SD.begin( GPIO_SD_CS )) {
 
 		etl::string<64> msg;
 		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open SDCard to serve [%s].", request->url().c_str() );

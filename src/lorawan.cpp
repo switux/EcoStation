@@ -20,6 +20,10 @@
 #include "gpio_config.h"
 #include "lorawan_setup.h"
 #include "lorawan.h"
+#include "common.h"
+#include "EcoStation.h"
+
+extern EcoStation	station;
 
 const lmic_pinmap lmic_pins = {
 	.nss	= GPIO_LORA_CS,
@@ -46,16 +50,13 @@ void os_getDevKey( u1_t* buf )
 	memcpy_P( buf, APPKEY, 16 );
 }
 
-bool AWSLoraWAN::begin( bool _debug_mode )
+bool AWSLoraWAN::begin( const uint8_t *deveui, const uint8_t *appkey, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
 
-/*	digitalWrite( GPIO_LORA_CS, LOW );
-	SPI.transfer( 0x42 & 0x7F );
-	uint8_t value = SPI.transfer( 0x00 );
-	if ( value != 0x12 )
-		return false;
-*/
+	memcpy_P( DEVEUI, deveui, 8 );
+	memcpy_P( APPKEY, appkey, 16 );
+
 	os_init();
 	LMIC_reset();
 	restore_after_deep_sleep();
@@ -87,7 +88,7 @@ bool AWSLoraWAN::do_join( void )
 {
 	os_runloop_once();
 
-	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode & OP_JOINING ) == 0 )) {
+	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode& OP_JOINING ) == 0 )) {
 
 		Serial.printf( "[LORAWAN   ] [INFO ] JOINED with devaddr=0x%lx\n", LMIC.devaddr );
 		return true;
@@ -106,9 +107,14 @@ void AWSLoraWAN::join( void )
 
 	while ( (!( joined = do_join() )) && ( ( millis() - start ) < 20000 )) {};
 	if ( !joined )
-		Serial.printf( "[LORAWAN   ] [ERROR ] Could not join the network\n" );
+		Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network\n" );
 }
 
+bool AWSLoraWAN::has_joined( void )
+{
+	return joined;
+}
+ 
 void AWSLoraWAN::prepare_for_deep_sleep( int deep_sleep_time_secs )
 {
 	RTC_LMIC = LMIC;
@@ -164,7 +170,7 @@ void AWSLoraWAN::send( osjob_t *job )
 		unsigned long	start			= millis();
 		bool			message_sent	= false;
 
-		while (( !message_sent ) && (( millis() - start ) < 20000 )) {
+		while (( !message_sent ) && (( millis() - start ) < 10000 )) {
 
 			os_runloop_once();
 

@@ -119,6 +119,11 @@ uint8_t *AWSNetwork::get_wifi_mac( void )
 	return wifi_mac;
 }
 
+bool AWSNetwork::has_joined( void )
+{
+	return lorawan->has_joined();
+}
+
 void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
@@ -127,8 +132,8 @@ void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
 	station.unselect_spi_devices();
-	
-	lorawan->begin( _debug_mode );
+
+	lorawan->begin( _config->get_lora_deveui(), _config->get_lora_appkey(), _debug_mode );
 	initialise_wifi();
 }
 
@@ -266,7 +271,6 @@ void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
 	station.unselect_spi_devices();
-
 	lorawan->join();
 	lorawan->send_data( buffer, len );	
 }
