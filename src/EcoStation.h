@@ -42,12 +42,6 @@ const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in m
 const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
 const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
-const unsigned short	PANEL_V_MAX		= 7000;
-const unsigned int		V_DIV_R3		= 470000;
-const unsigned int		V_DIV_R4		= 390000;
-const float				PANEL_V_MAX_IN	= ( PANEL_V_MAX*V_DIV_R4 )/( V_DIV_R3+V_DIV_R4 );
-const unsigned short	ADC_PANEL_V_MAX	= ( PANEL_V_MAX_IN*ADC_MAX / VCC );
-
 enum struct aws_ip_info : uint8_t
 {
 	ETH_DNS,

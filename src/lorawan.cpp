@@ -73,13 +73,14 @@ bool AWSLoraWAN::begin( const uint8_t *deveui, const uint8_t *appkey, bool _debu
 		LMIC_setupChannel( 8, 868800000, DR_RANGE_MAP( DR_FSK,  DR_FSK ),  BAND_MILLI );
 		LMIC_setLinkCheckMode( 0 );
 		LMIC.dn2Dr = DR_SF9;
-		LMIC_setDrTxpow( DR_SF7, 14 );
+		LMIC_setDrTxpow( DR_SF12, 14 );
 		Serial.printf( "[LORAWAN   ] [INFO ] Need to rejoin.\n" );
 
-	} else
+	} else {
 
 		Serial.printf( "[LORAWAN   ] [INFO ] No need to rejoin.\n" );
-
+		LMIC_setLinkCheckMode( 1 );
+	}
 	return true;
 }
 

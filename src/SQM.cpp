@@ -93,14 +93,6 @@ void SQM::change_integration_time( uint8_t upDown, tsl2591IntegrationTime_t *int
 	}
 }
 
-void SQM::read( float ambient_temp )
-{
-	tsl->setGain( TSL2591_GAIN_LOW );
-	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
-
-	while ( !get_msas_nelm( ambient_temp ));
-}
-
 bool SQM::decrease_gain( tsl2591Gain_t *gain_idx )
 {
 	if ( *gain_idx != TSL2591_GAIN_LOW ) {
@@ -124,30 +116,6 @@ bool SQM::decrease_integration_time( tsl2591IntegrationTime_t *int_time_idx )
 		return true;
 	}
 	return false;	
-}
-
-bool SQM::increase_gain( tsl2591Gain_t *gain_idx )
-{
-	if ( *gain_idx != TSL2591_GAIN_MAX ) {
-
-		if ( debug_mode )
-			Serial.printf( "[SQM       ] [DEBUG] Increasing gain.\n" );
-		change_gain( UP, gain_idx );
-		return true;
-	}
-	return false;
-}
-
-bool SQM::increase_integration_time( tsl2591IntegrationTime_t *int_time_idx )
-{
-	if ( *int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
-
-		if ( debug_mode )
-			Serial.printf( "[SQM       ] [DEBUG] Increasing integration time.\n" );
-		change_integration_time( UP, int_time_idx );
-		return true;
-	}
-	return false;
 }
 
 bool SQM::get_msas_nelm( float ambient_temp )
@@ -229,6 +197,38 @@ bool SQM::get_msas_nelm( float ambient_temp )
 		Serial.printf( "[SQM       ] [DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] Iterations=[%d] Visible=[%05d] Infrared=[%05d] MPSAS=[%f] NELM=[%2.2f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, sqm_data->msas, sqm_data->nelm );
 
 	return true;
+}
+
+bool SQM::increase_gain( tsl2591Gain_t *gain_idx )
+{
+	if ( *gain_idx != TSL2591_GAIN_MAX ) {
+
+		if ( debug_mode )
+			Serial.printf( "[SQM       ] [DEBUG] Increasing gain.\n" );
+		change_gain( UP, gain_idx );
+		return true;
+	}
+	return false;
+}
+
+bool SQM::increase_integration_time( tsl2591IntegrationTime_t *int_time_idx )
+{
+	if ( *int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
+
+		if ( debug_mode )
+			Serial.printf( "[SQM       ] [DEBUG] Increasing integration time.\n" );
+		change_integration_time( UP, int_time_idx );
+		return true;
+	}
+	return false;
+}
+
+void SQM::read( float ambient_temp )
+{
+	tsl->setGain( TSL2591_GAIN_LOW );
+	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
+
+	while ( !get_msas_nelm( ambient_temp ));
 }
 
 uint8_t SQM::read_with_extended_integration_time( float ambient_temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )

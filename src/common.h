@@ -31,7 +31,7 @@
 // Force DEBUG output even if not activated by external button
 const uint8_t DEBUG_MODE = 1;
 
-#define COMPACT_DATA_FORMAT_VERSION	0x02
+#define COMPACT_DATA_FORMAT_VERSION	0x01
 
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
@@ -64,7 +64,6 @@ struct health_data_t {
 
 	float			battery_level;
 	uint32_t		fs_free_space;
-	float			panel_voltage;
 	uint32_t		uptime;
 	uint32_t		init_heap_size;
 	uint32_t		current_heap_size;
@@ -152,7 +151,6 @@ struct compact_data_t {
 	aws_device_t	available_sensors;
 
 	int16_t			battery_level;
-	int16_t			panel_voltage;
 	uint32_t		uptime;
 	uint32_t		fs_free_space;
 

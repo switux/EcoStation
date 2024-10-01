@@ -186,39 +186,6 @@ byte AWSNetwork::mask_to_cidr( uint32_t subnet )
 	return cidr;
 }
 
-bool AWSNetwork::wifi_post_content( const char *remote_server, etl::string<128> &final_endpoint, const char *jsonString )
-{
-	HTTPClient 			http;
-	uint8_t				http_code;
-	WiFiClientSecure	wifi_client;
-
-	wifi_client.setCACert( config->get_root_ca().data() );
-	if ( !wifi_client.connect( remote_server, 443 )) {
-
-		if ( debug_mode )
-			Serial.printf( "NOK.\n" );
-		return false;
-	}
-
-	if ( debug_mode )
-		Serial.printf( "OK.\n" );
-
-	http.begin( wifi_client, final_endpoint.data() );
-	http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
-	http.addHeader( "Content-Type", "application/json" );
-	http_code = http.POST( jsonString );
-	http.end();
-	wifi_client.stop();
-
-	if ( http_code == 200 )
-		return true;
-		
-	if ( debug_mode )
-		Serial.printf( "[NETWORK   ] [DEBUG] HTTP response: %d\n", http_code );
-
-	return false;
-}
-
 bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const char *jsonString )
 {
 	uint8_t				fe_len;
@@ -309,5 +276,38 @@ bool AWSNetwork::start_hotspot( void )
 		Serial.printf( "[NETWORK   ] [INFO ] Started hotspot on SSID [%s/%s] and configuration server @ IP=%s/%s\n", ssid, password, ip, cidr );
 		return true;
 	}
+	return false;
+}
+
+bool AWSNetwork::wifi_post_content( const char *remote_server, etl::string<128> &final_endpoint, const char *jsonString )
+{
+	HTTPClient 			http;
+	uint8_t				http_code;
+	WiFiClientSecure	wifi_client;
+
+	wifi_client.setCACert( config->get_root_ca().data() );
+	if ( !wifi_client.connect( remote_server, 443 )) {
+
+		if ( debug_mode )
+			Serial.printf( "NOK.\n" );
+		return false;
+	}
+
+	if ( debug_mode )
+		Serial.printf( "OK.\n" );
+
+	http.begin( wifi_client, final_endpoint.data() );
+	http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
+	http.addHeader( "Content-Type", "application/json" );
+	http_code = http.POST( jsonString );
+	http.end();
+	wifi_client.stop();
+
+	if ( http_code == 200 )
+		return true;
+		
+	if ( debug_mode )
+		Serial.printf( "[NETWORK   ] [DEBUG] HTTP response: %d\n", http_code );
+
 	return false;
 }

@@ -26,6 +26,8 @@
 #include <SD.h>
 #include <LittleFS.h>
 
+#define DYNAMIC_JSON_DOCUMENT_SIZE  4096
+
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "defaults.h"

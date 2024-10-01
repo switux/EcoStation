@@ -271,7 +271,6 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 
 	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
 	json_data["battery_level"] = station_data.health.battery_level;
-	json_data["panel_voltage"] = station_data.health.panel_voltage;
 	json_data["timestamp"] = sensor_data->timestamp;
 	json_data["temperature"] = sensor_data->weather.temperature;
 	json_data["pressure"] = sensor_data->weather.pressure;
@@ -685,7 +684,6 @@ void EcoStation::read_battery_level( void )
 		return;
 
 	int	adc_value = 0;
-	int adc_value2 = 0;
 
 	WiFi.mode ( WIFI_OFF );
 
@@ -693,9 +691,8 @@ void EcoStation::read_battery_level( void )
 
 	for ( uint8_t i = 0; i < 5; i++ ) {
 
-		delay( 1000 );
+		delay( 500 );
 		adc_value += analogRead( GPIO_BAT_ADC );
-		adc_value2 += analogRead( GPIO_PANEL_ADC );
 	}
 
 	digitalWrite( GPIO_BAT_ADC_EN, LOW );
@@ -703,11 +700,6 @@ void EcoStation::read_battery_level( void )
 	adc_value /= 5;
 	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
 	compact_data.battery_level = float_to_int16_encode( station_data.health.battery_level, 0, 100 );
-	
-	adc_value2 /= 5;
-	float adc_v_in = adc_value2 * VCC / ADC_PANEL_V_MAX;
-	station_data.health.panel_voltage = ( adc_v_in * ( V_DIV_R3 + V_DIV_R4 )/ V_DIV_R4 ) / 1000.F;
-	compact_data.panel_voltage = float_to_int16_encode( station_data.health.panel_voltage, 0, 100 );
 
 	if ( debug_mode ) {
 
@@ -715,7 +707,6 @@ void EcoStation::read_battery_level( void )
 		float adc_v_in = adc_value * VCC / ADC_V_MAX;
 		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
 		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", station_data.health.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
-		Serial.printf( "[STATION   ] [DEBUG] Solar panel: ADC=%d (%1.3fV) : input voltage=%1.3fV\n", adc_value, adc_v_in / 1000.F, station_data.health.panel_voltage );
 	}
 }
 
