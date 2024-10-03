@@ -238,8 +238,8 @@ void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
 	station.unselect_spi_devices();
-	lorawan->join();
-	lorawan->send_data( buffer, len );	
+	if ( lorawan->join() )
+		lorawan->send_data( buffer, len );	
 }
 
 bool AWSNetwork::start_hotspot( void )

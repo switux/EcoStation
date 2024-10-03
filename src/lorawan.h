@@ -48,7 +48,7 @@ class AWSLoraWAN
 
 				AWSLoraWAN( void ) = default;
 		bool	begin( const uint8_t *, const uint8_t *, bool );
-		void	join( void );
+		bool	join( void );
 		bool	has_joined( void );
 		void	prepare_for_deep_sleep( int );
 		void	restore_after_deep_sleep( void );

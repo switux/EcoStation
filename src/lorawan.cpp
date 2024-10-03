@@ -91,23 +91,43 @@ bool AWSLoraWAN::do_join( void )
 	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode& OP_JOINING ) == 0 )) {
 
 		Serial.printf( "[LORAWAN   ] [INFO ] JOINED with devaddr=0x%lx\n", LMIC.devaddr );
+		LMIC_setLinkCheckMode( 1 );
 		return true;
 	}
 	return false;
 }
 
-void AWSLoraWAN::join( void )
+bool AWSLoraWAN::join( void )
 {
 	if ( joined )
-		return;
+		return true;
 
-	LMIC_startJoining();
+	uint8_t			retries = 1;
+	unsigned long	start;
 
-	unsigned long	start	= millis();
+	while ( retries <= 5 ) {
 
-	while ( (!( joined = do_join() )) && ( ( millis() - start ) < 20000 )) {};
-	if ( !joined )
-		Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network\n" );
+		LMIC_setLinkCheckMode( 0 );
+		LMIC_setDrTxpow( DR_SF12, 14 );
+		start	= millis();
+		LMIC_startJoining();
+
+		while ( (!( joined = do_join() )) && ( ( millis() - start ) < 10000 )) {};
+		if ( !joined )
+
+			Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network, attempt #%d/5\n", retries );
+
+		else {
+
+			LMIC_setLinkCheckMode( 1 );
+			return true;
+		}
+		
+		retries++;
+	}
+
+	LMIC_setLinkCheckMode( 1 );
+	return joined;
 }
 
 bool AWSLoraWAN::has_joined( void )
