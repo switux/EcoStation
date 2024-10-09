@@ -33,7 +33,6 @@ const lmic_pinmap lmic_pins = {
 
 RTC_DATA_ATTR lmic_t RTC_LMIC;
 
-// Only for OTAA
 void os_getArtEui( u1_t* buf )
 {
 	memcpy_P( buf, APPEUI, 8 );
@@ -84,13 +83,13 @@ bool AWSLoraWAN::begin( const uint8_t *deveui, const uint8_t *appkey, bool _debu
 	return true;
 }
 
-bool AWSLoraWAN::do_join( void )
+bool AWSLoraWAN::check_joined( void )
 {
 	os_runloop_once();
 
-	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode& OP_JOINING ) == 0 )) {
+	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode & OP_JOINING ) == 0 )) {
 
-		Serial.printf( "[LORAWAN   ] [INFO ] JOINED with devaddr=0x%lx\n", LMIC.devaddr );
+		Serial.printf( "[LORAWAN   ] [INFO ] Joined LoRaWAN network with devaddr 0x%04lX\n", LMIC.devaddr );
 		LMIC_setLinkCheckMode( 1 );
 		return true;
 	}
@@ -99,34 +98,23 @@ bool AWSLoraWAN::do_join( void )
 
 bool AWSLoraWAN::join( void )
 {
-	if ( joined )
+	if ( joined ) {
+
+		LMIC_setLinkCheckMode( 1 );
 		return true;
-
-	uint8_t			retries = 1;
-	unsigned long	start;
-
-	while ( retries <= 5 ) {
-
-		LMIC_setLinkCheckMode( 0 );
-		LMIC_setDrTxpow( DR_SF12, 14 );
-		start	= millis();
-		LMIC_startJoining();
-
-		while ( (!( joined = do_join() )) && ( ( millis() - start ) < 10000 )) {};
-		if ( !joined )
-
-			Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network, attempt #%d/5\n", retries );
-
-		else {
-
-			LMIC_setLinkCheckMode( 1 );
-			return true;
-		}
-		
-		retries++;
 	}
 
-	LMIC_setLinkCheckMode( 1 );
+	LMIC_setLinkCheckMode( 0 );
+	LMIC_startJoining();
+
+	unsigned long	start = millis();
+
+	while ( (!( joined = check_joined() )) && ( ( millis() - start ) < 20000 )) {};
+	if ( !joined )
+		Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network\n" );
+	else
+		LMIC_setLinkCheckMode( 1 );
+
 	return joined;
 }
 
@@ -142,8 +130,6 @@ void AWSLoraWAN::prepare_for_deep_sleep( int deep_sleep_time_secs )
 	//
 	// https://github.com/JackGruber/ESP32-LMIC-DeepSleep-example
 	// Otherwise stuck with opmode 0x100 set and no packet is ever transmitted
-	//
-	// FIXME: maybe we could benefit from the RTC?
 	//
 	unsigned long now = millis();
 	for( int i = 0; i < MAX_BANDS; i++ ) {
@@ -171,37 +157,61 @@ void AWSLoraWAN::restore_after_deep_sleep( void )
 
 void AWSLoraWAN::send( osjob_t *job )
 {
+	LMIC.rxDelay = 5;
+
 	if ( LMIC.opmode & OP_TXRXPEND ) {
 
 		if ( debug_mode )
 			Serial.print( "[LORAWAN   ] [DEBUG] RX/TX pending, not sending packet\n" );
-
-	} else {
-
-		LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata), mylen, 0 );
-		if ( debug_mode ) {
-
-			Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", mylen );
-			for( int i = 0; i < mylen; i++ )
-				Serial.printf( "%02x ", mydata[ i ] );
-			Serial.printf( "]\n" );
-		}
-
-		unsigned long	start			= millis();
-		bool			message_sent	= false;
-
-		while (( !message_sent ) && (( millis() - start ) < 10000 )) {
-
-			os_runloop_once();
-
-			if ( ( LMIC.opmode & OP_TXRXPEND ) || ( LMIC.opmode & OP_RNDTX ))
-				delay( 100 );
-			else
-				message_sent = true;
-		}
-		if ( message_sent )
-			Serial.printf( "[LORAWAN   ] [DEBUG] Packet sent\n"  );
+		return;
 	}
+
+	LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata), mylen, 0 );
+	if ( debug_mode ) {
+
+		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", mylen );
+		for( int i = 0; i < mylen; i++ )
+			Serial.printf( "%02x ", mydata[ i ] );
+		Serial.printf( "]\n" );
+	}
+
+	unsigned long	start			= millis();
+	bool			message_sent	= false,
+					msg_recv		= false;
+
+	while (( millis() - start ) < 10000 ) {
+
+		os_runloop_once();
+
+		if ( !message_sent && !( LMIC.opmode & OP_TXRXPEND ))  {
+			message_sent = true;
+			Serial.println("[LORAWAN   ] [DEBUG] Transmission completed.");
+		}
+	
+		if ( message_sent && ( LMIC.txrxFlags & ( TXRX_DNW1 | TXRX_DNW2 ))) {
+
+				if ( LMIC.dataLen > 0 ) {
+
+					Serial.printf( "[LORAWAN   ] [DEBUG] Downlink payload: [" );
+					for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+						Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+					Serial.printf( "]\n" );
+					uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
+					Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
+                    
+				} else {
+                Serial.println("[DEBUG] No downlink payload received.");
+            }
+		}
+/*
+			if (LMIC.txrxFlags & TXRX_NOPORT) {
+				Serial.println("[DEBUG] RX window timeout, no downlink received.");
+		    }
+*/
+			delay( 100 );
+
+		}
+		Serial.printf( "[LORAWAN   ] [DEBUG] Packet %ssent\n", message_sent?"":"not "  );
 }
 
 void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )

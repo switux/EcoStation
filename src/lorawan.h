@@ -42,7 +42,7 @@ class AWSLoraWAN
 		uint8_t		mydata[64];
 		uint32_t	mylen;
 	
-		bool do_join( void );
+		bool 	check_joined( void );
 
 	public:
 
