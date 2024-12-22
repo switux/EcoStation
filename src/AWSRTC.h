@@ -33,7 +33,7 @@ class AWSRTC
 		uint8_t decimal_to_bcd( uint8_t );
 
 	public:
-				AWSRTC( void );
+				AWSRTC( void ) = default;
 		bool	begin( void );
 		void	get_datetime( struct tm * );
 		void	set_datetime( time_t * );

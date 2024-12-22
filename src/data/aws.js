@@ -100,10 +100,9 @@ function fill_network_values( values )
 	});
 
 	show_wifi();
-	x = document.getElementById("wifi");
+	let x = document.getElementById("wifi");
 	if ( x !== null )
 		x.checked = true;
-
 
 	toggle_sta_ipgw(  values['show_wifi_sta_ip_mode'] );
 	switch( values['wifi_mode'] ) {

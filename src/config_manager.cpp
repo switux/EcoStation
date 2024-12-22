@@ -33,9 +33,9 @@ extern EcoStation station;
 
 RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 
-AWSConfig::AWSConfig( void )
+AWSConfig::AWSConfig( void ) :
+	json_config ( new DynamicJsonDocument( 3072 ) )
 {
-	json_config = new DynamicJsonDocument( 3072 );
 }
 
 template <size_t N>

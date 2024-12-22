@@ -23,11 +23,7 @@
 #include <time.h>
 #include "AWSRTC.h"
 
-#define DS3231_I2C_ADDRESS 0x68
-
-AWSRTC::AWSRTC( void )
-{
-}
+const uint8_t DS3231_I2C_ADDRESS = 0x68;
 
 uint8_t AWSRTC::bcd_to_decimal( uint8_t i )
 {
