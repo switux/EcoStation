@@ -17,7 +17,7 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <FS.h>
 #include <LittleFS.h>
 
@@ -173,8 +173,15 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 	devices |= aws_device_t::BME_SENSOR * ( json_config->containsKey( "has_bme" ) ? (*json_config)["has_bme"].as<int>() : DEFAULT_HAS_BME );
 	devices |= aws_device_t::MLX_SENSOR * ( json_config->containsKey( "has_mlx" ) ? (*json_config)["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
 	devices |= aws_device_t::TSL_SENSOR * ( json_config->containsKey( "has_tsl" ) ? (*json_config)["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
-
+	devices |= aws_device_t::SPL_SENSOR * ( json_config->containsKey( "has_spl" ) ? (*json_config)["has_tsl"].as<int>() : DEFAULT_HAS_SPL );
+	
 	set_missing_parameters_to_default_values();
+
+	// Add fixed hardware config
+	
+	(*json_config)["has_rtc"]= ( ( devices & aws_device_t::RTC_DEVICE ) == aws_device_t::RTC_DEVICE );
+	(*json_config)["has_lorawan"]= ( ( devices & aws_device_t::LORAWAN_DEVICE ) == aws_device_t::LORAWAN_DEVICE );
+	(*json_config)["has_sdcard"]= ( ( devices & aws_device_t::SDCARD_DEVICE ) == aws_device_t::SDCARD_DEVICE );
 
 	return true;
 }
@@ -292,13 +299,20 @@ bool AWSConfig::read_hw_info_from_nvs( etl::string<64> &firmware_sha56 )
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get RTC presence from NVS. Please contact support.\n" );
 
 	}
-	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::RTC;
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::RTC_DEVICE;
+
+	if ( ( x = nvs.getChar( "has_sdcard", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get SDCARD presence from NVS. Please contact support.\n" );
+
+	}
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SDCARD_DEVICE;
 
 	if ( ( x = nvs.getChar( "has_lorawan", 127 )) == 127 ) {
 
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN presence from NVS. Please contact support.\n" );
 	}
-	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LORAWAN;
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LORAWAN_DEVICE;
 
 	if ( x ) {
 
@@ -600,6 +614,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "data_push" ):
 			case str2int( "has_bme" ):
 			case str2int( "has_mlx" ):
+			case str2int( "has_spl" ):
 			case str2int( "has_tsl" ):
 				proposed_config[ item.key().c_str() ] = 1;
 				break;

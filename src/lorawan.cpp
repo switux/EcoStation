@@ -91,6 +91,7 @@ bool AWSLoraWAN::check_joined( void )
 
 		Serial.printf( "[LORAWAN   ] [INFO ] Joined LoRaWAN network with devaddr 0x%04lX\n", LMIC.devaddr );
 		LMIC_setLinkCheckMode( 1 );
+
 		return true;
 	}
 	return false;
@@ -157,8 +158,6 @@ void AWSLoraWAN::restore_after_deep_sleep( void )
 
 void AWSLoraWAN::send( osjob_t *job )
 {
-	LMIC.rxDelay = 5;
-
 	if ( LMIC.opmode & OP_TXRXPEND ) {
 
 		if ( debug_mode )
@@ -179,7 +178,7 @@ void AWSLoraWAN::send( osjob_t *job )
 	bool			message_sent	= false,
 					msg_recv		= false;
 
-	while (( millis() - start ) < 10000 ) {
+	while (( millis() - start ) < 5000 ) {
 
 		os_runloop_once();
 
@@ -187,8 +186,10 @@ void AWSLoraWAN::send( osjob_t *job )
 			message_sent = true;
 			Serial.println("[LORAWAN   ] [DEBUG] Transmission completed.");
 		}
+
+	Serial.printf("opmode=%x txrx=%x\n", LMIC.opmode, LMIC.txrxFlags );
 	
-		if ( message_sent && ( LMIC.txrxFlags & ( TXRX_DNW1 | TXRX_DNW2 ))) {
+		if ( ( LMIC.txrxFlags & ( TXRX_DNW1 | TXRX_DNW2 ))) {
 
 				if ( LMIC.dataLen > 0 ) {
 
@@ -199,15 +200,22 @@ void AWSLoraWAN::send( osjob_t *job )
 					uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
 					Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
                     
-				} else {
-                Serial.println("[DEBUG] No downlink payload received.");
-            }
+				}
 		}
-/*
+
 			if (LMIC.txrxFlags & TXRX_NOPORT) {
-				Serial.println("[DEBUG] RX window timeout, no downlink received.");
+				if ( LMIC.dataLen > 0 ) {
+
+					Serial.printf( "[LORAWAN   ] [DEBUG] No PORT Downlink payload: [" );
+					for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+						Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+					Serial.printf( "]\n" );
+					uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
+					Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
+                    
+				}
 		    }
-*/
+
 			delay( 100 );
 
 		}

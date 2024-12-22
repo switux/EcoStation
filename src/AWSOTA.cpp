@@ -18,7 +18,7 @@
 */
 
 #include <esp_task_wdt.h>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <HTTPClient.h>
 #include <Update.h>
 #include <WiFi.h>

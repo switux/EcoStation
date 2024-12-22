@@ -21,7 +21,7 @@
 #include <esp_ota_ops.h>
 #include <esp_task_wdt.h>
 #include <Preferences.h>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <time.h>
 #include <thread>
 #include <stdio.h>
@@ -52,6 +52,7 @@ extern SemaphoreHandle_t	sensors_read_mutex;
 const std::array<etl::string<10>, 3> PWR_MODE_STR = { "SolarPanel", "12VDC", "PoE" };
 
 const bool				FORMAT_LITTLEFS_IF_FAILED = true;
+const unsigned long		FACTORY_RESET_GUARD			= 15000000;	// 15 seconds
 const unsigned long		MAINTENANCE_MODE_GUARD		= 5000000;	// 5 seconds
 
 RTC_DATA_ATTR time_t 	boot_timestamp = 0;				// NOSONAR
@@ -67,6 +68,12 @@ EcoStation::EcoStation( void )
 	station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 	location = DEFAULT_LOCATION;
 	compact_data.format_version = COMPACT_DATA_FORMAT_VERSION;
+}
+
+bool EcoStation::activate_sensors( void )
+{
+	Serial.printf( "[STATION   ] [INFO ] Activating sensors.\n" );
+	return ( ready = sensor_manager.initialise( &config, &compact_data, true ));
 }
 
 void EcoStation::check_ota_updates( bool force_update = false )
@@ -110,7 +117,7 @@ void EcoStation::compute_uptime( void )
   	}
 }
 
-bool EcoStation::determine_boot_mode( void )
+void EcoStation::determine_boot_mode( void )
 {
 	unsigned long start					= micros();
 	unsigned long button_pressed_secs	= 0;
@@ -120,13 +127,17 @@ bool EcoStation::determine_boot_mode( void )
 	debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
 	while ( !( gpio_get_level( GPIO_DEBUG ))) {
 
-		if (( micros() - start ) >= MAINTENANCE_MODE_GUARD )
+		if (( micros() - start ) >= FACTORY_RESET_GUARD	) {
+			boot_mode = aws_boot_mode_t::FACTORY_RESET;
 			break;
+		}
+
+		if (( micros() - start ) >= MAINTENANCE_MODE_GUARD )
+			boot_mode = aws_boot_mode_t::MAINTENANCE;
+
 		delay( 100 );
 		button_pressed_secs = micros() - start;
 	}
-
-	return ( button_pressed_secs > MAINTENANCE_MODE_GUARD );
 }
 
 void EcoStation::display_banner()
@@ -147,8 +158,8 @@ void EcoStation::display_banner()
 	print_config_string( "# Board              : %s", ota_setup.board.data() );
 	print_config_string( "# Model              : %s", ota_setup.config.data() );
 	print_config_string( "# WIFI Mac           : %s", ota_setup.device.data() );
-	print_config_string( "# LoRaWAN            : %s", config.get_has_device( aws_device_t::LORAWAN ) ? "Yes" : "No" );
-	if ( config.get_has_device( aws_device_t::LORAWAN ) )
+	print_config_string( "# LoRaWAN            : %s", config.get_has_device( aws_device_t::LORAWAN_DEVICE ) ? "Yes" : "No" );
+	if ( config.get_has_device( aws_device_t::LORAWAN_DEVICE ) )
   		print_config_string( "# LoRaWAN DEVEUI     : %s", config.get_lora_deveui_str().data() );
 	print_config_string( "# Firmware           : %s", ota_setup.version.data() );
 
@@ -177,24 +188,24 @@ void EcoStation::display_banner()
 bool EcoStation::enter_maintenance_mode( void )
 {
 	if ( debug_mode )
-		Serial.printf( "[STATION   ] [INFO ] Trying to enter maintenance mode...\n ");
+		Serial.printf( "[STATION   ] [INFO ] Trying to enter maintenance mode...\n" );
 
 	if ( !network.is_wifi_connected() ) {
 
 		if ( !network.start_hotspot() ) {
 
-			Serial.printf( "[STATION   ] [ERROR] Failed to start WiFi AP and STA, cannot enter maintenance mode.\n ");
+			Serial.printf( "[STATION   ] [ERROR] Failed to start WiFi AP and STA, cannot enter maintenance mode.\n" );
 			return false;
 
 		} else
 
-			Serial.printf( "[STATION   ] [INFO ] Failed to start WiFi STA, fallen back to AP.\n ");
+			Serial.printf( "[STATION   ] [INFO ] Failed to start WiFi STA, fallen back to AP.\n" );
 
 	}
 
 	if ( !start_config_server() ) {
 
-		Serial.printf( "[STATION   ] [PANIC ] Failed to start WiFi AP, cannot enter maintenance mode.\n ");
+		Serial.printf( "[STATION   ] [PANIC ] Failed to start WiFi AP, cannot enter maintenance mode.\n" );
 		return false;
 
 	} else
@@ -204,7 +215,7 @@ bool EcoStation::enter_maintenance_mode( void )
 
 void EcoStation::fixup_timestamp( void )
 {
-	if ( !config.get_has_device( aws_device_t::RTC )) {
+	if ( !config.get_has_device( aws_device_t::RTC_DEVICE )) {
 
 		Serial.printf( "[STATION   ] [INFO ] RTC not present.\n");
 		return;
@@ -350,7 +361,7 @@ time_t EcoStation::get_timestamp( void )
 {
 	time_t now = 0;
 
-	if ( ntp_synced || config.get_has_device( aws_device_t::RTC ))
+	if ( ntp_synced || config.get_has_device( aws_device_t::RTC_DEVICE ))
 		time( &now );
 
 	return now;
@@ -373,9 +384,10 @@ bool EcoStation::has_device( aws_device_t device )
 		case aws_device_t::MLX_SENSOR:
 		case aws_device_t::TSL_SENSOR:
 		case aws_device_t::BME_SENSOR:
-		case aws_device_t::DBMETER_SENSOR:
-		case aws_device_t::RTC:
-		case aws_device_t::LORAWAN:
+		case aws_device_t::SPL_SENSOR:
+		case aws_device_t::RTC_DEVICE:
+		case aws_device_t::SDCARD_DEVICE:
+		case aws_device_t::LORAWAN_DEVICE:
 			return config.get_has_device( device );
 		default:
 			return false;
@@ -384,10 +396,11 @@ bool EcoStation::has_device( aws_device_t device )
 
 bool EcoStation::initialise( void )
 {
-	bool					maintenance_mode = determine_boot_mode();
 	std::array<uint8_t, 6>	mac;
 	byte					offset = 0;
 	std::array<uint8_t, 32>	sha_256;
+
+	determine_boot_mode();
 
 	esp_partition_get_sha256( esp_ota_get_running_partition(), sha_256.data() );
 	for ( uint8_t _byte : sha_256 ) {
@@ -432,6 +445,9 @@ bool EcoStation::initialise( void )
 	ota_setup.version += ".";
 	ota_setup.version += BUILD_ID;
 
+//	if ( boot_mode == aws_boot_mode_t::FACTORY_RESET )
+//		factory_reset();
+
 	read_battery_level();
 
 	network.initialise( &config, debug_mode );
@@ -441,18 +457,21 @@ bool EcoStation::initialise( void )
 		// Issue #143
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
-		if ( network.is_wifi_connected() || maintenance_mode )
+		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
+		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
+
+		fixup_timestamp();
+
+		if ( network.is_wifi_connected() || ( boot_mode == aws_boot_mode_t::MAINTENANCE ))
 			enter_maintenance_mode();
 		else
 			WiFi.mode ( WIFI_OFF );
-
-		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
-		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
 
 	} else {
 
 		start_config_server();
 		sync_time( true );
+		fixup_timestamp();
 	}
 	
 	if ( ota_update_ongoing ) {
@@ -462,9 +481,8 @@ bool EcoStation::initialise( void )
 	}
 
 	display_banner();
-	fixup_timestamp();
 
-	if ( !sensor_manager.initialise( &config, &compact_data ))
+	if ( !sensor_manager.initialise( &config, &compact_data, false ))
 		return false;
 
 	if ( solar_panel )
@@ -635,7 +653,7 @@ void EcoStation::print_runtime_config( void )
 	const char			*root_ca = config.get_root_ca().data();
 	int					ca_pos = 0;
 	    
-	if ( config.get_has_device( aws_device_t::LORAWAN ) ) {
+	if ( config.get_has_device( aws_device_t::LORAWAN_DEVICE ) ) {
 
 		print_config_string( "# LoRaWAN APPKEY : %s", config.get_lora_appkey_str().data() );
 		if ( network.has_joined() )
@@ -676,6 +694,7 @@ void EcoStation::print_runtime_config( void )
 	print_config_string( "# SQM/IRRADIANCE   : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( aws_device_t::MLX_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( aws_device_t::BME_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# SPL              : %s", config.get_has_device( aws_device_t::SPL_SENSOR ) ? "Yes" : "No" );
 }
 
 void EcoStation::read_battery_level( void )
@@ -898,7 +917,6 @@ void EcoStation::send_data( void )
 	// FIXME: make it config dependent (LoRa)
 	network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
 	store_unsent_data( etl::string_view( json_sensor_data ));
-
 
 	digitalWrite( GPIO_ENABLE_3_3V, LOW );
 

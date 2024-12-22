@@ -58,6 +58,7 @@ const int				DEFAULT_CONFIG_PORT						= 80;
 const uint8_t			DEFAULT_HAS_BME							= 0;
 const uint8_t			DEFAULT_HAS_MLX							= 0;
 const uint8_t			DEFAULT_HAS_TSL							= 0;
+const uint8_t			DEFAULT_HAS_SPL							= 0;
 const float				DEFAULT_MSAS_CORRECTION					= -0.55;
 const aws_iface			DEFAULT_PREF_IFACE						= aws_iface::wifi_ap;
 
