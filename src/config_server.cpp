@@ -21,7 +21,7 @@
 #include <esp_task_wdt.h>
 #include <AsyncTCP.h>
 #include <SSLClient.h>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <FS.h>
 #include <SD.h>
 #include <LittleFS.h>
@@ -40,6 +40,12 @@
 extern HardwareSerial Serial1;
 extern EcoStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// Issue #7
+
+void AWSWebServer::activate_sensors( AsyncWebServerRequest *request )
+{
+	station.activate_sensors();
+	request->send( 200, "text/plain", "Activated sensors" );
+}
 
 void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 {
@@ -252,6 +258,7 @@ void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVarian
 void AWSWebServer::start( void )
 {
 	server->addHandler( new AsyncCallbackJsonWebHandler( "/set_config", std::bind( &AWSWebServer::set_configuration, this, std::placeholders::_1, std::placeholders::_2 )));
+	server->on( "/activate_sensors", HTTP_GET, std::bind( &AWSWebServer::activate_sensors, this, std::placeholders::_1 ));
 	server->on( "/aws.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/unsent.txt", HTTP_GET, std::bind( &AWSWebServer::send_sdcard_file, this, std::placeholders::_1 ));

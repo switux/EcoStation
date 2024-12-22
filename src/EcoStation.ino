@@ -24,7 +24,7 @@
 #include "EcoStation.h"
 
 const etl::string<12>		REV					= "1.0.0";
-const unsigned long			US_SLEEP			= 15 * 60 * 1000000;				// 15 minutes
+const unsigned long			US_SLEEP			= 10 * 60 * 1000000;				// 15 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 EcoStation station;

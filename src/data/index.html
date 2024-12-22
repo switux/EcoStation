@@ -79,6 +79,8 @@
 			background: #f6f6f6;
 			font-weight: bold;
 			width: 80px;
+			text-decoration: none;
+			font-size: 9pt;
 			padding-top: 5px;
 			padding-bottom: 5px;
 			border: 3px solid #ff3030;
@@ -107,7 +109,6 @@
 		<div id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
 		<div id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
 		<div id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
-		<div id="banner_devices"  class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" role="button" tabIndex="0">Devices</div>
 		<div id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
 	</div> <!-- banners -->
 
@@ -144,9 +145,9 @@
 							<input id="Both" form="config" name="wifi_mode" value="2" type="radio" onchange="toggle_wifi_mode(2);"/> AP+Station
 						</td>
 					</tr>
-					<tr id="show_sta_ssid">
+					<tr id="show_wifi_sta_ssid">
 						<td>Station SSID</td>
-						<td><input form="config" id="sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
+						<td><input form="config" id="wifi_sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
 					</tr>
 					<tr id="show_wifi_sta_password">
 						<td>Station Password</td>
@@ -171,9 +172,9 @@
 						<td>Station DNS</td>
 						<td><input form="config" id="wifi_sta_dns" name="wifi_sta_dns" value="" type="text" size="15"></td>
 					</tr>
-					<tr id="show_ap_ssid">
+					<tr id="show_wifi_ap_ssid">
 						<td>AP SSID</td>
-						<td><input form="config" id="ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
+						<td><input form="config" id="wifi_ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
 					</tr>
 					<tr id="show_wifi_ap_password">
 						<td>AP Password</td>
@@ -246,6 +247,11 @@
 							K7=<input style="border: 0px" form="config" name="k7" type="text" id="k7" size=3 value="0"/>
 						</td>
 					</tr>
+					<tr>
+						<td>SPL</td>
+						<td style="text-align:center"><input form="config" name="has_spl" type="checkbox" id="has_spl"/></td>
+					</tr>
+
 				</table>
 
 			</div> <!-- sensor_list -->
@@ -275,22 +281,6 @@
 			</div> <!-- sensor_list -->
 
 		</div> <!-- sensors -->
-
-		<div id="devices">
-
-			<div id="_devices" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
-
-				<table aria-describedby="Other devices config"  style="margin: 0 auto">
-					<tr><th style="border-bottom: 1px solid">Device</th><th  style="border-bottom: 1px solid">Enabled</th></tr>
-					<tr>
-						<td>GPS</td>
-						<td style="text-align:center"><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td>
-					</tr>
-				</table>
-
-			</div> <!-- devices -->
-			
-		</div> <!-- devices -->
 
 		<div id="dashboard" style="flex-direction: column">
 
@@ -324,16 +314,13 @@
 
 				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
-					<table aria-describedby="OTA" style="margin: 0 auto">
-						<tr><th colspan="2" style="border-bottom: 1px solid">GPS</tr>
-						<tr><td>GPS Fix</td><td><span id="gps_fix"></span></td></tr>
-						<tr><td>Longitude</td><td><span id="gps_longitude"></span></td></tr>
-						<tr><td>Latitude</td><td><span id="gps_latitude"></span></td></tr>
-						<tr><td>Altitude</td><td><span id="gps_altitude"></span> m</td></tr>
-						<tr><td>GPS time</td><td><span id="gps_time"></span></td></tr>
+					<table aria-describedby="RTC" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid; position: relative">RTC</th></tr>
+						<tr><td>Date</td><td><span id="rtc_date"></span></td></tr>
+						<tr><td>Time</td><td><span id="rtc_time"></span></td></tr>
 					</table>
 
-				</div> <!-- GPS -->
+				</div> <!-- RTC -->
 
 			</div>
 			
@@ -381,7 +368,16 @@
 						<tr><td></td><td>Cloud coverage</td><td><span id="cloud_coverage"></span></td></tr>
 					</table>
 
-				</div> <!-- sun data -->
+				</div> <!-- cloud data -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="SPL data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">Sound Pressure Level data</tr>
+						<tr><td><span id="spl_led" class="led"><span class="led_color"></span></span></td><td>SPL</td><td><span id="spl"></span> dB</td></tr>
+					</table>
+
+				</div> <!-- SPL data -->
 
 
 			</div>
@@ -391,6 +387,8 @@
 			<input class="awsbutton" style="width: 80px" type="button" onclick="send_config();" id="toto" form="config" value="SAVE">
 			<input class="awsbutton" style="width: 80px" type="button" onclick="reboot();" value="REBOOT">
 			<input class="awsbutton" style="width: 160px" type="button" onclick="force_ota();" value="Check for new version">
+			<a href="/get_backlog" class="awsbutton" style="display: inline-block; width: 160px" download="data.json">Get data backlog</a>
+			
 			<span id="ota_msg"></span>
 			<span class="awsstatus" style="width: 160px;color: #80a080" id="build_id"></span>
 			<span class="awsstatus" style="width: 160px;color: #a08080" id="status"></span>

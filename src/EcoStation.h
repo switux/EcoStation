@@ -53,6 +53,14 @@ enum struct aws_ip_info : uint8_t
 };
 using aws_ip_info_t = aws_ip_info;
 
+enum struct boot_mode : uint8_t
+{
+	NORMAL,
+	MAINTENANCE,
+	FACTORY_RESET	
+};
+using aws_boot_mode_t = boot_mode;
+
 struct ota_setup_t {
 
 	etl::string<24>	board;
@@ -72,6 +80,8 @@ class EcoStation {
 
 		TaskHandle_t				aws_periodic_task_handle;
 		AWSRTC						aws_rtc;
+		
+		aws_boot_mode_t				boot_mode					= aws_boot_mode_t::NORMAL;
 		compact_data_t				compact_data;
 		AWSConfig					config;
 		bool						debug_mode					= false;
@@ -92,7 +102,7 @@ class EcoStation {
 		IPAddress		cidr_to_mask( byte );
 		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
-		bool 			determine_boot_mode( void );
+		void 			determine_boot_mode( void );
 		void			display_banner( void );
 		bool			enter_maintenance_mode( void );
 		void			fixup_timestamp( void );
@@ -118,6 +128,7 @@ class EcoStation {
 	public:
 
 							EcoStation( void );
+		bool				activate_sensors( void );
 		void				check_ota_updates( bool );
 		int16_t				float_to_int16_encode( float, float, float );
 		int32_t				float_to_int32_encode( float, float, float );

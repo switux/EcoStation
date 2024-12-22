@@ -26,7 +26,7 @@
 
 #include <AsyncTCP.h>
 #include <SSLClient.h>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
 class AWSWebServer {
@@ -49,6 +49,7 @@ class AWSWebServer {
 		bool			debug_mode	= false;
 		bool			initialised	= false;
 
+		void		activate_sensors( AsyncWebServerRequest * );
 		void		get_uptime( AsyncWebServerRequest * );
 		void		handle404( AsyncWebServerRequest * );
 		void		index( AsyncWebServerRequest * );

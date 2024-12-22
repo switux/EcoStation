@@ -20,7 +20,7 @@
 #include <esp_task_wdt.h>
 #include <ESP32Time.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 
 #include "defaults.h"
 #include "gpio_config.h"
@@ -38,7 +38,7 @@ SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
 const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR |
 									aws_device_t::TSL_SENSOR |
 									aws_device_t::BME_SENSOR |
-									aws_device_t::DBMETER_SENSOR );
+									aws_device_t::SPL_SENSOR );
 
 const std::array<etl::string_view,3> CLOUD_COVERAGE_STR = { etl::string_view( "Clear" ), etl::string_view( "Cloudy" ), etl::string_view( "Overcast" ) };
 
@@ -114,14 +114,14 @@ sensor_data_t *AWSSensorManager::get_sensor_data( void )
 	return &sensor_data;
 }
 
-bool AWSSensorManager::initialise( AWSConfig *_config, compact_data_t *_compact_data )
+bool AWSSensorManager::initialise( AWSConfig *_config, compact_data_t *_compact_data, bool create_mutex )
 {
 	config = _config;
 	compact_data = _compact_data;
 
 	initialise_sensors();
 
-	if ( !solar_panel ) {
+	if ( !solar_panel || create_mutex ) {
 
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
@@ -153,7 +153,7 @@ void AWSSensorManager::initialise_dbmeter( void )
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [INFO ] Found DBMETER.\n" );
 
-		available_sensors |= aws_device_t::DBMETER_SENSOR;
+		available_sensors |= aws_device_t::SPL_SENSOR;
 	}
 }
 
@@ -249,7 +249,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 
 void AWSSensorManager::read_dbmeter( void  )
 {
-	if ( ( available_sensors & aws_device_t::DBMETER_SENSOR ) == aws_device_t::DBMETER_SENSOR ) {
+	if ( ( available_sensors & aws_device_t::SPL_SENSOR ) == aws_device_t::SPL_SENSOR ) {
 
 		sensor_data.db = spl->read();
 		if ( debug_mode )

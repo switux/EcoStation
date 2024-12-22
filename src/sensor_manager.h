@@ -73,7 +73,7 @@ class AWSSensorManager {
 		bool					get_debug_mode( void );
 		SemaphoreHandle_t		get_i2c_mutex( void );
 		sensor_data_t			*get_sensor_data( void );
-		bool					initialise( AWSConfig *, compact_data_t * );
+		bool					initialise( AWSConfig *, compact_data_t *, bool );
 		void					initialise_sensors( void );
 		bool					poll_sensors( void );
 		void					read_sensors( void );
