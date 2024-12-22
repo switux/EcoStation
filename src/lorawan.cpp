@@ -110,7 +110,7 @@ bool AWSLoraWAN::join( void )
 
 	unsigned long	start = millis();
 
-	while ( (!( joined = check_joined() )) && ( ( millis() - start ) < 20000 )) {};
+	while ( (!( joined = check_joined() )) && ( ( millis() - start ) < 20000 )) { /* wait 20s before giving up */ };
 	if ( !joined )
 		Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network\n" );
 	else
@@ -175,8 +175,8 @@ void AWSLoraWAN::send( osjob_t *job )
 	}
 
 	unsigned long	start			= millis();
-	bool			message_sent	= false,
-					msg_recv		= false;
+	bool			message_sent	= false;
+	bool			msg_recv		= false;
 
 	while (( millis() - start ) < 5000 ) {
 

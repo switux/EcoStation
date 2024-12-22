@@ -21,27 +21,28 @@
 #ifndef _dbmeter_h
 #define _dbmeter_h
 
-#define	DBM_I2C_ADDR			0x48
-#define DBM_REG_VERSION			0x00
-#define DBM_REG_ID3				0x01
-#define DBM_REG_ID2				0x02
-#define DBM_REG_ID1				0x03
-#define DBM_REG_ID0				0x04
-#define DBM_REG_SCRATCH			0x05
-#define DBM_REG_CONTROL			0x06
-#define DBM_REG_TAVGH			0x07
-#define DBM_REG_TAVGL			0x08
-#define DBM_REG_RESET			0x09
-#define DBM_REG_DECIBEL			0x0A
-#define DBM_REG_MIN				0x0B
-#define DBM_REG_MAX				0x0C
-#define DBM_REG_THR_MIN			0x0D
-#define DBM_REG_DBHISTORY_0		0x14
-#define DBM_REG_DBHISTORY_99	0x77
-#define DBM_REG_FREQ_64BINS_0	0x78
-#define DBM_REG_FREQ_64BINS_63	0xB7
-#define DBM_REG_FREQ_16BINS_0	0xB8
-#define DBM_REG_FREQ_16BINS_15	0xC7
+enum struct spl_hw_t : uint8_t {
+	DBM_I2C_ADDR 			= 0x48,
+	DBM_REG_VERSION			= 0x00,
+	DBM_REG_ID3				= 0x01,
+	DBM_REG_ID2				= 0x02,
+	DBM_REG_ID1				= 0x03,
+	DBM_REG_ID0				= 0x04,
+	DBM_REG_SCRATCH			= 0x05,
+	DBM_REG_CONTROL			= 0x06,
+	DBM_REG_TAVGH			= 0x07,
+	DBM_REG_TAVGL			= 0x08,
+	DBM_REG_RESET			= 0x09,
+	DBM_REG_DECIBEL			= 0x0A,
+	DBM_REG_MIN				= 0x0B,
+	DBM_REG_MAX				= 0x0C,
+	DBM_REG_THR_MIN			= 0x0D,
+	DBM_REG_DBHISTORY_0		= 0x14,
+	DBM_REG_DBHISTORY_99	= 0x77,
+	DBM_REG_FREQ_64BINS_0	= 0x78,
+	DBM_REG_FREQ_64BINS_63	= 0xB7,
+	DBM_REG_FREQ_16BINS_0	= 0xB8,
+	DBM_REG_FREQ_16BINS_15	= 0xC7 };
 
 struct dbm_control_t {
 	
