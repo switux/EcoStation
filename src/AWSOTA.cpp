@@ -33,9 +33,8 @@
 extern bool	ota_update_ongoing;			// NOSONAR
 extern EcoStation	station;
 
-AWSOTA::AWSOTA( void )
+AWSOTA::AWSOTA( void ) : json_ota_config( 6000 )
 {
-	json_ota_config = new DynamicJsonDocument( 6000 );
 }
 
 ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY )
@@ -53,7 +52,7 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 	if ( !aws_board_id.size() || !aws_config.size() || !aws_device_id.size() )
 		return ota_status_t::CONFIG_ERROR;
 
-	for( auto ota_config : (*json_ota_config)["Configurations"].as<JsonArray>() ) {
+	for( auto ota_config : json_ota_config["Configurations"].as<JsonArray>() ) {
 
 		if ( ota_config.containsKey( "Board" ))
 			board.assign( ota_config["Board"].as<const char *>() );
@@ -175,7 +174,7 @@ bool AWSOTA::download_json( const char *url, const char *root_ca )
 	}
 	
 	if ( ( http_status = http.GET()) == 200 )
-		deserialisation_status = deserializeJson( *json_ota_config, http.getString() );
+		deserialisation_status = deserializeJson( json_ota_config, http.getString() );
 
 	http.end();
 	return (( http_status == 200 ) && ( deserialisation_status == DeserializationError::Ok ));

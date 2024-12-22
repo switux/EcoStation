@@ -62,7 +62,7 @@ class AWSOTA {
 		etl::string_view				aws_device_id;
 		DeserializationError			deserialisation_status;
 		int								http_status;
-		DynamicJsonDocument				*json_ota_config		= nullptr;
+		DynamicJsonDocument				json_ota_config;
 		std::function<void (int, int)>	progress_callback		= nullptr;
 		ota_status_t					status_code				= ota_status_t::UNKNOWN;
 

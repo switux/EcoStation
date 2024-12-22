@@ -26,15 +26,14 @@
 #include "config_manager.h"
 #include "EcoStation.h"
 
-extern HardwareSerial Serial1;
+extern HardwareSerial Serial1;	// NOSONAR
 
 
 extern EcoStation station;
 
 RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 
-AWSConfig::AWSConfig( void ) :
-	json_config ( new DynamicJsonDocument( 3072 ) )
+AWSConfig::AWSConfig( void ) : json_config( 3072 )
 {
 }
 
@@ -84,7 +83,7 @@ etl::string_view AWSConfig::get_json_string_config( void )
 	static etl::string<5120>	json_string;
 	int							i;
 
-	if ( ( i = serializeJson( *json_config, json_string.data(), json_string.capacity() )) >= json_string.capacity() ) {
+	if ( ( i = serializeJson( json_config, json_string.data(), json_string.capacity() )) >= json_string.capacity() ) {
 
 		Serial.printf( "[CONFIGMNGR] [ERROR] Reached configuration string limit (%d > 1024). Please contact support\n", i );
 		return etl::string_view( "" );
@@ -170,18 +169,18 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 		Serial.printf( "[CONFIGMNGR] [INFO ] Using minimal/factory config file.\n" );
 	}
 
-	devices |= aws_device_t::BME_SENSOR * ( json_config->containsKey( "has_bme" ) ? (*json_config)["has_bme"].as<int>() : DEFAULT_HAS_BME );
-	devices |= aws_device_t::MLX_SENSOR * ( json_config->containsKey( "has_mlx" ) ? (*json_config)["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
-	devices |= aws_device_t::TSL_SENSOR * ( json_config->containsKey( "has_tsl" ) ? (*json_config)["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
-	devices |= aws_device_t::SPL_SENSOR * ( json_config->containsKey( "has_spl" ) ? (*json_config)["has_tsl"].as<int>() : DEFAULT_HAS_SPL );
+	devices |= aws_device_t::BME_SENSOR * ( json_config.containsKey( "has_bme" ) ? json_config["has_bme"].as<int>() : DEFAULT_HAS_BME );
+	devices |= aws_device_t::MLX_SENSOR * ( json_config.containsKey( "has_mlx" ) ? json_config["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
+	devices |= aws_device_t::TSL_SENSOR * ( json_config.containsKey( "has_tsl" ) ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
+	devices |= aws_device_t::SPL_SENSOR * ( json_config.containsKey( "has_spl" ) ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_SPL );
 	
 	set_missing_parameters_to_default_values();
 
 	// Add fixed hardware config
 	
-	(*json_config)["has_rtc"]= ( ( devices & aws_device_t::RTC_DEVICE ) == aws_device_t::RTC_DEVICE );
-	(*json_config)["has_lorawan"]= ( ( devices & aws_device_t::LORAWAN_DEVICE ) == aws_device_t::LORAWAN_DEVICE );
-	(*json_config)["has_sdcard"]= ( ( devices & aws_device_t::SDCARD_DEVICE ) == aws_device_t::SDCARD_DEVICE );
+	json_config["has_rtc"]= ( ( devices & aws_device_t::RTC_DEVICE ) == aws_device_t::RTC_DEVICE );
+	json_config["has_lorawan"]= ( ( devices & aws_device_t::LORAWAN_DEVICE ) == aws_device_t::LORAWAN_DEVICE );
+	json_config["has_sdcard"]= ( ( devices & aws_device_t::SDCARD_DEVICE ) == aws_device_t::SDCARD_DEVICE );
 
 	return true;
 }
@@ -253,7 +252,7 @@ bool AWSConfig::read_file( const char *filename )
 		return false;
 	}
 
-	if ( DeserializationError::Ok == deserializeJson( *json_config, file )) {
+	if ( DeserializationError::Ok == deserializeJson( json_config, file )) {
 
 		if ( debug_mode )
 			Serial.printf( "[CONFIGMNGR] [DEBUG] Configuration is valid.\n");
@@ -443,109 +442,109 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 void AWSConfig::set_missing_network_parameters_to_default_values( void )
 {
-	if ( !json_config->containsKey( "wifi_ap_ssid" ))
-		(*json_config)["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
+	if ( !json_config.containsKey( "wifi_ap_ssid" ))
+		json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
 
-	if ( !json_config->containsKey( "config_port" ))
-		(*json_config)["config_port"] = DEFAULT_CONFIG_PORT;
+	if ( !json_config.containsKey( "config_port" ))
+		json_config["config_port"] = DEFAULT_CONFIG_PORT;
 
-	if ( !json_config->containsKey( "pref_iface" ))
-		(*json_config)["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
+	if ( !json_config.containsKey( "pref_iface" ))
+		json_config["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
 
-	if ( !json_config->containsKey( "remote_server" ))
-		(*json_config)["remote_server"] = DEFAULT_SERVER;
+	if ( !json_config.containsKey( "remote_server" ))
+		json_config["remote_server"] = DEFAULT_SERVER;
 
-	if ( !json_config->containsKey( "wifi_sta_ssid" ))
-		(*json_config)["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
+	if ( !json_config.containsKey( "wifi_sta_ssid" ))
+		json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
 
-	if ( !json_config->containsKey( "url_path" ))
-		(*json_config)["url_path"] = DEFAULT_URL_PATH;
+	if ( !json_config.containsKey( "url_path" ))
+		json_config["url_path"] = DEFAULT_URL_PATH;
 
-	if ( !json_config->containsKey( "wifi_ap_dns" ))
-		(*json_config)["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
+	if ( !json_config.containsKey( "wifi_ap_dns" ))
+		json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
 
-	if ( !json_config->containsKey( "wifi_ap_gw" ))
-		(*json_config)["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
+	if ( !json_config.containsKey( "wifi_ap_gw" ))
+		json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
 
-	if ( !json_config->containsKey( "wifi_ap_ip" ))
-		(*json_config)["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
+	if ( !json_config.containsKey( "wifi_ap_ip" ))
+		json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
 
-	if ( !json_config->containsKey( "wifi_ap_password" ))
-		(*json_config)["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
+	if ( !json_config.containsKey( "wifi_ap_password" ))
+		json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
 
-	if ( !json_config->containsKey( "wifi_mode" ))
-		(*json_config)["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
+	if ( !json_config.containsKey( "wifi_mode" ))
+		json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
 
-	if ( !json_config->containsKey( "wifi_sta_dns" ))
-		(*json_config)["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
+	if ( !json_config.containsKey( "wifi_sta_dns" ))
+		json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
 
-	if ( !json_config->containsKey( "wifi_sta_gw" ))
-		(*json_config)["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
+	if ( !json_config.containsKey( "wifi_sta_gw" ))
+		json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
 
-	if ( !json_config->containsKey( "wifi_sta_ip" ))
-		(*json_config)["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
+	if ( !json_config.containsKey( "wifi_sta_ip" ))
+		json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
 
-	if ( !json_config->containsKey( "wifi_sta_ip_mode" ))
-		(*json_config)["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
+	if ( !json_config.containsKey( "wifi_sta_ip_mode" ))
+		json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
 
-	if ( !json_config->containsKey( "wifi_sta_password" ))
-		(*json_config)["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
+	if ( !json_config.containsKey( "wifi_sta_password" ))
+		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
 }
 
 void AWSConfig::set_missing_parameters_to_default_values( void )
 {
 	set_missing_network_parameters_to_default_values();
 	
-	if ( !json_config->containsKey( "k1" ))
-		(*json_config)["k1"] = DEFAULT_K1;
+	if ( !json_config.containsKey( "k1" ))
+		json_config["k1"] = DEFAULT_K1;
 
-	if ( !json_config->containsKey( "k2" ))
-		(*json_config)["k2"] = DEFAULT_K3;
+	if ( !json_config.containsKey( "k2" ))
+		json_config["k2"] = DEFAULT_K3;
 
-	if ( !json_config->containsKey( "k3" ))
-		(*json_config)["k3"] = DEFAULT_K3;
+	if ( !json_config.containsKey( "k3" ))
+		json_config["k3"] = DEFAULT_K3;
 
-	if ( !json_config->containsKey( "k4" ))
-		(*json_config)["k4"] = DEFAULT_K4;
+	if ( !json_config.containsKey( "k4" ))
+		json_config["k4"] = DEFAULT_K4;
 
-	if ( !json_config->containsKey( "k5" ))
-		(*json_config)["k5"] = DEFAULT_K5;
+	if ( !json_config.containsKey( "k5" ))
+		json_config["k5"] = DEFAULT_K5;
 
-	if ( !json_config->containsKey( "k6" ))
-		(*json_config)["k6"] = DEFAULT_K6;
+	if ( !json_config.containsKey( "k6" ))
+		json_config["k6"] = DEFAULT_K6;
 
-	if ( !json_config->containsKey( "k7" ))
-		(*json_config)["k7"] = DEFAULT_K7;
+	if ( !json_config.containsKey( "k7" ))
+		json_config["k7"] = DEFAULT_K7;
 
-	if ( !json_config->containsKey( "cc_aag_cloudy" ))
-		(*json_config)["cc_aag_cloudy"] = DEFAULT_CC_AAG_CLOUDY;
+	if ( !json_config.containsKey( "cc_aag_cloudy" ))
+		json_config["cc_aag_cloudy"] = DEFAULT_CC_AAG_CLOUDY;
 
-	if ( !json_config->containsKey( "cc_aag_overcast" ))
-		(*json_config)["cc_aag_overcast"] = DEFAULT_CC_AAG_OVERCAST;
+	if ( !json_config.containsKey( "cc_aag_overcast" ))
+		json_config["cc_aag_overcast"] = DEFAULT_CC_AAG_OVERCAST;
 
-	if ( !json_config->containsKey( "cc_aws_cloudy" ))
-		(*json_config)["cc_aws_cloudy"] = DEFAULT_CC_AWS_CLOUDY;
+	if ( !json_config.containsKey( "cc_aws_cloudy" ))
+		json_config["cc_aws_cloudy"] = DEFAULT_CC_AWS_CLOUDY;
 
-	if ( !json_config->containsKey( "cc_aws_overcast" ))
-		(*json_config)["cc_aws_overcast"] = DEFAULT_CC_AWS_OVERCAST;
+	if ( !json_config.containsKey( "cc_aws_overcast" ))
+		json_config["cc_aws_overcast"] = DEFAULT_CC_AWS_OVERCAST;
 		
-	if ( !json_config->containsKey( "msas_calibration_offset" ))
-		(*json_config)["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
+	if ( !json_config.containsKey( "msas_calibration_offset" ))
+		json_config["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
 
-	if ( !json_config->containsKey( "tzname" ))
-		(*json_config)["tzname"] = DEFAULT_TZNAME;
+	if ( !json_config.containsKey( "tzname" ))
+		json_config["tzname"] = DEFAULT_TZNAME;
 
-	if ( !json_config->containsKey( "automatic_updates" ))
-		(*json_config)["automatic_updates"] = DEFAULT_AUTOMATIC_UPDATES;
+	if ( !json_config.containsKey( "automatic_updates" ))
+		json_config["automatic_updates"] = DEFAULT_AUTOMATIC_UPDATES;
 
-	if ( !json_config->containsKey( "data_push" ))
-		(*json_config)["data_push"] = DEFAULT_DATA_PUSH;
+	if ( !json_config.containsKey( "data_push" ))
+		json_config["data_push"] = DEFAULT_DATA_PUSH;
 
-	if ( !json_config->containsKey( "push_freq" ))
-		(*json_config)["push_freq"] = DEFAULT_PUSH_FREQ;
+	if ( !json_config.containsKey( "push_freq" ))
+		json_config["push_freq"] = DEFAULT_PUSH_FREQ;
 
-	if ( !json_config->containsKey( "ota_url" ))
-		(*json_config)["ota_url"] = DEFAULT_OTA_URL;
+	if ( !json_config.containsKey( "ota_url" ))
+		json_config["ota_url"] = DEFAULT_OTA_URL;
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
