@@ -21,22 +21,18 @@ let dashboardRefresh;
 const MLX_SENSOR = 0x01;
 const TSL_SENSOR = 0x02;
 const BME_SENSOR = 0x04;
+const SPL_SENSOR = 0x800;
 
-const	GPS_DEVICE	= 0x40;
+const GPS_DEVICE = 0x40;
 
 // 12=After OTA Update
 const	RESET_REASON = [ 'Unknown', 'Power on', 'PIN reset', 'Reboot', 'Exception/Panic reset', 'Interrupt WD', 'Task WD', 'Other WD', 'Deepsleep', 'Brownout', 'SDIO reset', 'USB reset', 'JTAG reset' ];
-const	PANELS = [ 'general', 'network', 'sensors', 'devices', 'dashboard' ];
-const	SENSORS = [ 'bme', 'tsl', 'mlx' ];
-const	WIFI_PARAMETERS = [ 'wifi_mode', 'sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
+const	PANELS = [ 'general', 'network', 'sensors', 'dashboard' ];
+const	SENSORS = [ 'bme', 'tsl', 'mlx', 'spl' ];
+const	WIFI_PARAMETERS = [ 'wifi_mode', 'wifi_sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'wifi_ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
 const	CLOUD_COVERAGE = [ 'Clear', 'Cloudy', 'Overcast' ];
 
 let sleepSetTimeout_ctrl;
-
-function sleep(ms) {
-    clearInterval(sleepSetTimeout_ctrl);
-    return new Promise(resolve => sleepSetTimeout_ctrl = setTimeout(resolve, ms));
-}
 
 function config_section_active( section_name, yes_no )
 {
@@ -57,6 +53,34 @@ function config_section_active( section_name, yes_no )
 	}
 }
 
+function fetch_station_data()
+{
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				let values = JSON.parse( req.responseText );
+				document.getElementById("status").textContent = "";
+				update_dashboard( values );
+			} else if ( this.status == 503 ) {
+				document.getElementById("status").textContent = "Station not ready";
+			}
+		}
+	};
+	req.open( "GET", "/get_station_data", true );
+	req.send();
+}
+
+function fill_cloud_coverage_parameter_values( values )
+{
+	for( let i = 1; i<8; i++ )
+		document.getElementById("k"+i).value = values['k'+i];
+	document.getElementById("cc_aws_cloudy").value = values['cc_aws_cloudy'];
+	document.getElementById("cc_aws_overcast").value = values['cc_aws_overcast'];
+	document.getElementById("cc_aag_cloudy").value = values['cc_aag_cloudy'];
+	document.getElementById("cc_aag_overcast").value = values['cc_aag_overcast'];
+}
+
 function fill_network_values( values )
 {
 	switch( values['wifi_mode'] ) {
@@ -70,13 +94,15 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-	let parameters = [ "ap_ssid", "remote_server", "sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+	let parameters = [ "wifi_ap_ssid", "remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
 	parameters.forEach(( parameter ) => {
 		document.getElementById( parameter ).value = values[ parameter ];
 	});
 
 	show_wifi();
-	document.getElementById("wifi").checked = true;
+	x = document.getElementById("wifi");
+	if ( x !== null )
+		x.checked = true;
 
 
 	toggle_sta_ipgw(  values['show_wifi_sta_ip_mode'] );
@@ -94,42 +120,10 @@ function fill_network_values( values )
 
 }
 
-
-
 function fill_sensor_values( values )
 {
 	SENSORS.forEach((sensor) => {
 		document.getElementById("has_"+sensor).checked = values['has_'+sensor];
-	});
-}
-
-function fill_cloud_coverage_parameter_values( values )
-{
-	for( let i = 1; i<8; i++ )
-		document.getElementById("k"+i).value = values['k'+i];
-	document.getElementById("cc_aws_cloudy").value = values['cc_aws_cloudy'];
-	document.getElementById("cc_aws_overcast").value = values['cc_aws_overcast'];
-	document.getElementById("cc_aag_cloudy").value = values['cc_aag_cloudy'];
-	document.getElementById("cc_aag_overcast").value = values['cc_aag_overcast'];
-}
-
-function makeRequest() {
-	return new Promise((resolve,reject) => {
-		clearInterval( dashboardRefresh );
-		sleep( 3000 );
-		let req = new XMLHttpRequest();
-		req.open( "GET", "/ota_update", true );
-		req.onload = function () {
-			if ( req.status == 200 ) {
-				resolve( req.responseText );
-			} else {
-				reject( new Error( req.status ));
-			}
-		};
-		req.onerror = function () {
-			reject( new Error( "Network error" ));
-		};
-		req.send();
 	});
 }
 
@@ -155,6 +149,33 @@ function hide_wifi()
 
 }
 
+function makeRequest() {
+	return new Promise((resolve,reject) => {
+		clearInterval( dashboardRefresh );
+		sleep( 3000 );
+		let req = new XMLHttpRequest();
+		req.open( "GET", "/ota_update", true );
+		req.onload = function () {
+			if ( req.status == 200 ) {
+				resolve( req.responseText );
+			} else {
+				reject( new Error( req.status ));
+			}
+		};
+		req.onerror = function () {
+			reject( new Error( "Network error" ));
+		};
+		req.send();
+	});
+}
+
+function reboot()
+{
+	let req = new XMLHttpRequest();
+	req.open( "GET", "/reboot", true );
+	req.send();
+}
+
 function retrieve_data()
 {
 	toggle_panel( 'general' );
@@ -169,10 +190,10 @@ function retrieve_data()
 			document.getElementById("automatic_updates").checked = values['automatic_updates'];
 			document.getElementById("push_freq").value = values['push_freq'];
 			document.getElementById("data_push").checked = values['data_push'];
+			document.getElementById("ota_url").value = values['ota_url'];
 			fill_network_values( values );
 			fill_sensor_values( values );
 			fill_cloud_coverage_parameter_values( values );
-			fill_lookout_values( values );
 
 		}
 	};
@@ -187,6 +208,30 @@ function retrieve_data()
 	};
 	req2.open( "GET", "/get_root_ca", true );
 	req2.send();
+}
+
+function send_config()
+{
+	let req = new XMLHttpRequest();
+	req.open( "POST", "/set_config", true );
+	req.setRequestHeader( "Content-Type", "application/json;charset=UTF-8" );
+	req.send( JSON.stringify(Object.fromEntries( ( new FormData(document.querySelector('#config') )).entries())) );
+}
+
+function show_wifi()
+{
+	WIFI_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "table-row";
+	});
+	if ( typeof ETH_PARAMETERS !== 'undefined' )
+		ETH_PARAMETERS.forEach( (parameter) => {
+			document.getElementById("show_"+parameter).style.display = "none";
+		});
+}
+
+function sleep(ms) {
+    clearInterval(sleepSetTimeout_ctrl);
+    return new Promise(resolve => sleepSetTimeout_ctrl = setTimeout(resolve, ms));
 }
 
 function toggle_panel( panel_id )
@@ -204,41 +249,6 @@ function toggle_panel( panel_id )
 
 	} else
 		clearInterval( dashboardRefresh );
-}
-
-function toggle_wifi_mode( wifi_mode )
-{
-	switch( wifi_mode ) {
-		case 0:
-			document.getElementById("show_ap_ssid").style.display = "none";
-			document.getElementById("show_wifi_ap_password").style.display = "none";
-			document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
-			document.getElementById("show_wifi_ap_ip").style.display = "none";
-			document.getElementById("show_wifi_ap_gw").style.display = "none";
-			document.getElementById("show_wifi_ap_dns").style.display = "none";
-			document.getElementById("show_sta_ssid").style.display = "table-row";
-			document.getElementById("show_wifi_sta_password").style.display = "table-row";
-			document.getElementById("show_wifi_sta_ip_mode").style.display = "table-row";
-			document.getElementById("show_wifi_sta_ip").style.display = "table-row";
-			document.getElementById("show_wifi_sta_gw").style.display = "table-row";
-			document.getElementById("show_wifi_sta_dns").style.display = "table-row";
-			break;
-		case 1:
-			document.getElementById("show_sta_ssid").style.display = "none";
-			document.getElementById("show_wifi_sta_password").style.display = "none";
-			document.getElementById("show_wifi_sta_ip_mode").style.display = "none";
-			document.getElementById("show_wifi_sta_ip").style.display = "none";
-			document.getElementById("show_wifi_sta_gw").style.display = "none";
-			document.getElementById("show_wifi_sta_dns").style.display = "none";
-			document.getElementById("show_wifi_ap_password").style.display = "table-row";
-			document.getElementById("show_wifi_ap_ip").style.display = "table-row";
-			document.getElementById("show_wifi_ap_gw").style.display = "table-row";
-			document.getElementById("show_wifi_ap_dns").style.display = "table-row";
-			break;
-		case 2:
-			show_wifi();
-			break;
-	}
 }
 
 function toggle_sta_ipgw( show )
@@ -262,47 +272,47 @@ function toggle_sta_ipgw( show )
 	}
 }
 
-function reboot()
+function toggle_wifi_mode( wifi_mode )
 {
-	let req = new XMLHttpRequest();
-	req.open( "GET", "/reboot", true );
-	req.send();
+	switch( wifi_mode ) {
+		case 0:
+			document.getElementById("show_wifi_ap_ssid").style.display = "none";
+			document.getElementById("show_wifi_ap_password").style.display = "none";
+			document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
+			document.getElementById("show_wifi_ap_ip").style.display = "none";
+			document.getElementById("show_wifi_ap_gw").style.display = "none";
+			document.getElementById("show_wifi_ap_dns").style.display = "none";
+			document.getElementById("show_wifi_sta_ssid").style.display = "table-row";
+			document.getElementById("show_wifi_sta_password").style.display = "table-row";
+			document.getElementById("show_wifi_sta_ip_mode").style.display = "table-row";
+			document.getElementById("show_wifi_sta_ip").style.display = "table-row";
+			document.getElementById("show_wifi_sta_gw").style.display = "table-row";
+			document.getElementById("show_wifi_sta_dns").style.display = "table-row";
+			break;
+		case 1:
+			document.getElementById("show_wifi_sta_ssid").style.display = "none";
+			document.getElementById("show_wifi_sta_password").style.display = "none";
+			document.getElementById("show_wifi_sta_ip_mode").style.display = "none";
+			document.getElementById("show_wifi_sta_ip").style.display = "none";
+			document.getElementById("show_wifi_sta_gw").style.display = "none";
+			document.getElementById("show_wifi_sta_dns").style.display = "none";
+			document.getElementById("show_wifi_ap_password").style.display = "table-row";
+			document.getElementById("show_wifi_ap_ip").style.display = "table-row";
+			document.getElementById("show_wifi_ap_gw").style.display = "table-row";
+			document.getElementById("show_wifi_ap_dns").style.display = "table-row";
+			break;
+		case 2:
+			show_wifi();
+			break;
+	}
 }
 
-function send_config()
+function update_datetime_dashboard( values )
 {
-	let req = new XMLHttpRequest();
-	req.open( "POST", "/set_config", true );
-	req.setRequestHeader( "Content-Type", "application/json;charset=UTF-8" );
-	req.send( JSON.stringify(Object.fromEntries( ( new FormData(document.querySelector('#config') )).entries())) );
-}
-
-function show_wifi()
-{
-	WIFI_PARAMETERS.forEach( (parameter) => {
-		document.getElementById("show_"+parameter).style.display = "table-row";
-	});
-	ETH_PARAMETERS.forEach( (parameter) => {
-		document.getElementById("show_"+parameter).style.display = "none";
-	});
-}
-
-function fetch_station_data()
-{
-	let req = new XMLHttpRequest();
-	req.onreadystatechange = function() {
-		if ( this.readyState == 4 ) {
-			if ( this.status == 200 ) {
-				let values = JSON.parse( req.responseText );
-				document.getElementById("status").textContent = "";
-				update_dashboard( values );
-			} else if ( this.status == 503 ) {
-				document.getElementById("status").textContent = "Station not ready";
-			}
-		}
-	};
-	req.open( "GET", "/get_station_data", true );
-	req.send();
+	let date = new Date( values[ 'timestamp' ] * 1000);
+	let month = date.getMonth()+1;
+	document.getElementById( "rtc_date" ).textContent = date.getFullYear()+"-"+('0'+month).slice(-2)+"-"+('0'+date.getDate()).slice(-2);
+	document.getElementById( "rtc_time" ).textContent = ('00'+date.getUTCHours()).slice(-2)+":"+('00'+date.getMinutes()).slice(-2)+":"+('00'+date.getSeconds()).slice(-2);
 }
 
 function update_dashboard( values )
@@ -316,7 +326,23 @@ function update_dashboard( values )
 
 	document.getElementById("build_id").textContent = 'V'+values['build_id'];
 
-	document.getElementById("uptime").textContent = days+' days '+hours+' hours '+mins+' minutes '+secs+' seconds';
+	let d=' ';
+	if ( days > 1 ) {
+			d='s ';
+	}
+	let h=' ';
+	if ( hours > 1 ) {
+			h='s ';
+	}
+	let m=' ';
+	if ( mins > 1 ) {
+			m='s ';
+	}
+	let s=' ';
+	if ( secs > 1 ) {
+			s='s ';
+	}
+	document.getElementById("uptime").textContent = days+' day'+d+hours+' hour'+h+mins+' minute'+m+secs+' second'+s;
 	document.getElementById("reset_reason").textContent = RESET_REASON[ values['reset_reason'] ];
 	document.getElementById("initial_heap").textContent = values['init_heap_size']+' bytes';
 	document.getElementById("current_heap").textContent = values['current_heap_size']+' bytes';
@@ -357,19 +383,9 @@ function update_dashboard( values )
 	}
 	document.getElementById("ota_status").textContent = str;
 
-	document.getElementById("gps_fix").textContent = ( values['gps_fix'] ) ? 'Yes':'No';
-	document.getElementById("gps_fix").style = ( values['gps_fix'] ) ? 'color:green':'color:red';
-	document.getElementById("gps_longitude").textContent = values['gps_longitude'];
-	document.getElementById("gps_latitude").textContent = values['gps_latitude'];
-	document.getElementById("gps_altitude").textContent = values['gps_altitude'];
-
-	let date = new Date( values['gps_time_sec']*1000 + values['gps_time_usec'] );
-	let iso = /(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}.\d{3})/.exec(date.toISOString());
-	document.getElementById("gps_time").textContent = iso[1]+' '+iso[2];
-
+	update_datetime_dashboard( values );
 	update_sensor_dashboard( values );
 }
-
 
 function update_sensor_dashboard( values )
 {
@@ -388,6 +404,8 @@ function update_sensor_dashboard( values )
 	document.getElementById("sky_temperature").textContent = values['sky_temperature'].toFixed(2);
 	document.getElementById("raw_sky_temperature").textContent = values['raw_sky_temperature'].toFixed(2);
 	document.getElementById("cloud_coverage").textContent = CLOUD_COVERAGE[ values['cloud_coverage'] ];
+
+	document.getElementById("spl").textContent = values['db'].toFixed(0);
 
 	if ( values['available_sensors'] & BME_SENSOR ) {
 		document.getElementById('temp_led').querySelector('.led_color').style.backgroundColor = 'green';
@@ -410,4 +428,10 @@ function update_sensor_dashboard( values )
 		document.getElementById('cloud_led').querySelector('.led_color').style.backgroundColor = 'green';
 	else
 		document.getElementById('cloud_led').querySelector('.led_color').style.backgroundColor = 'red';
+	
+	if ( values['available_sensors'] & SPL_SENSOR )
+		document.getElementById('spl_led').querySelector('.led_color').style.backgroundColor = 'green';
+	else
+		document.getElementById('spl_led').querySelector('.led_color').style.backgroundColor = 'red';
+	
 }
