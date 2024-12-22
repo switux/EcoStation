@@ -37,7 +37,7 @@
 #include "config_server.h"
 #include "EcoStation.h"
 
-extern HardwareSerial Serial1;
+extern HardwareSerial Serial1;	
 extern EcoStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// Issue #7
 

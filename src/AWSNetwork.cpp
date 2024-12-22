@@ -38,7 +38,6 @@ AWSNetwork::AWSNetwork( void )
 	current_wifi_mode = aws_wifi_mode::sta;
 	current_pref_iface = aws_iface::wifi_sta;
 	memset( wifi_mac, 0, 6 );
-	lorawan = new AWSLoraWAN;
 }
 
 IPAddress AWSNetwork::cidr_to_mask( byte cidr )
@@ -121,7 +120,7 @@ uint8_t *AWSNetwork::get_wifi_mac( void )
 
 bool AWSNetwork::has_joined( void )
 {
-	return lorawan->has_joined();
+	return lorawan.has_joined();
 }
 
 void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
@@ -133,7 +132,7 @@ void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 	station.unselect_spi_devices();
 
-	lorawan->begin( _config->get_lora_deveui(), _config->get_lora_appkey(), _debug_mode );
+	lorawan.begin( _config->get_lora_deveui(), _config->get_lora_appkey(), _debug_mode );
 	initialise_wifi();
 }
 
@@ -232,14 +231,14 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 
 void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 {
-	lorawan->prepare_for_deep_sleep( deep_sleep_secs );
+	lorawan.prepare_for_deep_sleep( deep_sleep_secs );
 }
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
 	station.unselect_spi_devices();
-	if ( lorawan->join() )
-		lorawan->send_data( buffer, len );	
+	if ( lorawan.join() )
+		lorawan.send_data( buffer, len );	
 }
 
 bool AWSNetwork::start_hotspot( void )

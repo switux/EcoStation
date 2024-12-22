@@ -35,7 +35,7 @@ const uint8_t COMPACT_DATA_FORMAT_VERSION = 0x01;
 
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
-extern HardwareSerial			Serial1;
+extern HardwareSerial			Serial1;	// NOSONAR
 
 enum class aws_device_t : unsigned long {
 	NO_SENSOR			= 0x00000000,

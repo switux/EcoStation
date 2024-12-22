@@ -114,7 +114,7 @@ class AWSConfig {
 		aws_device_t		devices					= aws_device_t::NO_SENSOR;
 		uint32_t			fs_free_space			= 0;
 		bool				initialised				= false;
-		DynamicJsonDocument	*json_config;
+		DynamicJsonDocument	json_config;
 		etl::string<65>		ota_sha256;
 		uint8_t				lora_appkey[16];
 		uint8_t				lora_eui[8];
@@ -161,7 +161,7 @@ T AWSConfig::get_aag_parameter( const char *key )
 		case str2int( "cc_aws_overcast" ):
 		case str2int( "cc_aag_cloudy" ):
 		case str2int( "cc_aag_overcast" ):
-			return (*json_config)[key].as<T>();
+			return json_config[key].as<T>();
 		default:
 			break;
 	}
@@ -180,7 +180,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "cloud_coverage_formula" ):
 		case str2int( "config_iface" ):
 		case str2int( "config_port" ):
-			return ( json_config->containsKey( key ) ? (*json_config)[key].as<T>() : 0 );
+			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );
 
 		case str2int( "automatic_updates" ):
 		case str2int( "data_push" ):
@@ -203,7 +203,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "wifi_sta_ip_mode" ):
 		case str2int( "wifi_sta_password" ):
 		case str2int( "wifi_sta_ssid" ):
-			return (*json_config)[key].as<T>();
+			return json_config[key].as<T>();
 		default:
 			break;
 

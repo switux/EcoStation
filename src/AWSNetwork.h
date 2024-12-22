@@ -29,7 +29,7 @@ class AWSNetwork {
 	private:
 
 		AWSConfig			*config;
-		AWSLoraWAN			*lorawan;
+		AWSLoraWAN			lorawan;
 		aws_iface			current_pref_iface;
 		aws_wifi_mode		current_wifi_mode;
 		bool				debug_mode;
