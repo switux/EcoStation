@@ -165,7 +165,7 @@ void AWSLoraWAN::send( osjob_t *job )
 		return;
 	}
 
-	LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata), mylen, 0 );
+	LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata.data()), mylen, 0 );
 	if ( debug_mode ) {
 
 		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", mylen );
@@ -218,9 +218,15 @@ void AWSLoraWAN::send( osjob_t *job )
 
 void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )
 {
-	memset( mydata, 0, len );
-	memcpy( mydata, buffer, len );
-	mylen = len;
+	std::fill( mydata.begin(), mydata.end(), 0 );
+	if ( len <= mydata.max_size() ) {
+		
+		memcpy( mydata.data(), buffer, len );
+		mylen = len;
+
+	} else
+
+		mylen = 0;
 
 	send( &sendjob );
 }
