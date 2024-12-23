@@ -165,7 +165,7 @@ void AWSLoraWAN::send( osjob_t *job )
 		return;
 	}
 
-	LMIC_setTxData2( 1, reinterpret_cast<unsigned char *>(mydata.data()), mylen, 0 );
+	LMIC_setTxData2( 1, mydata.data(), mylen, 0 );
 	if ( debug_mode ) {
 
 		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", mylen );
