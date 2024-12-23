@@ -551,6 +551,7 @@ void AWSConfig::set_root_ca( JsonVariant &_json_config )
 {
 	if ( _json_config.containsKey( "root_ca" )) {
 
+		_json_config[ "root_ca" ][ 4096 - 1 ] = 0;	// Must be updated along DYNAMIC_JSON_DOCUMENT_SIZE
 		if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
 			root_ca.assign( _json_config["root_ca"].as<const char *>() );
 			_json_config.remove( "root_ca" );

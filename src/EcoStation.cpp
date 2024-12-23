@@ -405,8 +405,8 @@ bool EcoStation::initialise( void )
 	esp_partition_get_sha256( esp_ota_get_running_partition(), sha_256.data() );
 	for ( uint8_t _byte : sha_256 ) {
 
-		char h[3];
-		snprintf( h, 3, "%02x", _byte );
+		etl::string<2> h;
+		snprintf( h.data(), 2, "%02x", _byte );
 		station_data.firmware_sha56 += h;
 
 	}

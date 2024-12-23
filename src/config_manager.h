@@ -116,8 +116,8 @@ class AWSConfig {
 		bool				initialised				= false;
 		DynamicJsonDocument	json_config;
 		etl::string<65>		ota_sha256;
-		uint8_t				lora_appkey[16];
-		uint8_t				lora_eui[8];
+		uint8_t				lora_appkey[16];	// NOSONAR
+		uint8_t				lora_eui[8];		// NOSONAR
 		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>	root_ca;
@@ -180,7 +180,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "cloud_coverage_formula" ):
 		case str2int( "config_iface" ):
 		case str2int( "config_port" ):
-			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );
+			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );	// NOSONAR
 
 		case str2int( "automatic_updates" ):
 		case str2int( "data_push" ):
