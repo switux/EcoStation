@@ -53,6 +53,23 @@ bool AWSConfig::can_rollback( void )
 	return _can_rollback;
 }
 
+void AWSConfig::factory_reset( void )
+{
+	bool x;
+	
+	if ( !LittleFS.begin( true )) {
+
+		Serial.printf( "[CONFIGMNGR] [ERROR] Could not access flash filesystem, bailing out!\n" );
+		return;
+	}
+
+	x = LittleFS.remove( "/aws.conf" );
+	if ( debug_mode )
+		Serial.printf( "[CONFIGMNGR] [ERROR] Config file %ssuccessfully deleted.\n", x ? "":"un" );
+
+	LittleFS.end();
+}
+
 uint32_t AWSConfig::get_fs_free_space( void )
 {
 	return fs_free_space;

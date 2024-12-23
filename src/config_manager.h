@@ -88,6 +88,7 @@ class AWSConfig {
 
 								AWSConfig( void );
 		bool					can_rollback( void );
+		void					factory_reset( void );
 		uint32_t				get_fs_free_space( void );
 		template <typename T>
 		T 						get_parameter( const char * );
