@@ -33,10 +33,6 @@ extern EcoStation station;
 
 RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 
-AWSConfig::AWSConfig( void ) : json_config( 3072 )
-{
-}
-
 template <size_t N>
 etl::string<N * 2> AWSConfig::bytes_to_hex_string(const uint8_t* bytes, size_t length) const {
     etl::string<N * 2> hex_str;

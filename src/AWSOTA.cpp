@@ -33,10 +33,6 @@
 extern bool	ota_update_ongoing;			// NOSONAR
 extern EcoStation	station;
 
-AWSOTA::AWSOTA( void ) : json_ota_config( 6000 )
-{
-}
-
 ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY )
 {
 	etl::string<32>	board;
