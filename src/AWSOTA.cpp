@@ -68,8 +68,8 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 
 		if (( !board.size() || ( board == aws_board_id )) &&
 			( !device.size() || ( device == aws_device_id )) &&
-			( !config.size() || ( config == aws_config ))) &&
-			(( !version.size() || ( version > current_version ))) {
+			( !config.size() || ( config == aws_config )) &&
+			( !version.size() || ( version > current_version ))) {
 
 			if ( action == ota_action_t::CHECK_ONLY )
 				return ota_status_t::UPDATE_AVAILABLE;
