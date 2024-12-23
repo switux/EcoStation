@@ -86,7 +86,7 @@ class AWSConfig {
 
 	public:
 
-								AWSConfig( void );
+								AWSConfig( void ) : json_config( 3072 ) {};
 		bool					can_rollback( void );
 		void					factory_reset( void );
 		uint32_t				get_fs_free_space( void );
