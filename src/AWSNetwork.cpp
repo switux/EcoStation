@@ -238,7 +238,7 @@ void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
 	station.unselect_spi_devices();
 	if ( lorawan.join() )
-		lorawan.send_data( buffer, len );	
+		lorawan.send_data( buffer, len );
 }
 
 bool AWSNetwork::start_hotspot( void )

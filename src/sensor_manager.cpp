@@ -85,11 +85,8 @@ aws_device_t& operator&=( aws_device_t& a, aws_device_t b )
 }
 
 AWSSensorManager::AWSSensorManager( void ) :
-	bme( new Adafruit_BME280() ),
-	mlx( new Adafruit_MLX90614() ),
-	tsl( new Adafruit_TSL2591( 2591 )),
-	spl( new dbmeter() ),
-	i2c_mutex( xSemaphoreCreateMutex() )
+	i2c_mutex( xSemaphoreCreateMutex() ),
+	tsl ( 2591 )
 {
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
 }
@@ -145,7 +142,7 @@ bool AWSSensorManager::initialise( AWSConfig *_config, compact_data_t *_compact_
 
 void AWSSensorManager::initialise_dbmeter( void )
 {
-	if ( !spl->begin() )
+	if ( !spl.begin() )
 		Serial.printf( "[SENSORMNGR] [ERROR] Could not find DBMETER.\n" );
 
 	else {
@@ -159,7 +156,7 @@ void AWSSensorManager::initialise_dbmeter( void )
 
 void AWSSensorManager::initialise_BME( void )
 {
-	if ( !bme->begin( 0x76 ) )
+	if ( !bme.begin( 0x76 ) )
 
 		Serial.printf( "[SENSORMNGR] [ERROR] Could not find BME280.\n" );
 
@@ -174,7 +171,7 @@ void AWSSensorManager::initialise_BME( void )
 
 void AWSSensorManager::initialise_MLX( void )
 {
-	if ( !mlx->begin() )
+	if ( !mlx.begin() )
 
 		Serial.printf( "[SENSORMNGR] [ERROR] Could not find MLX90614.\n" );
 
@@ -198,7 +195,7 @@ void AWSSensorManager::initialise_sensors( void )
 	if ( config->get_has_device( aws_device_t::TSL_SENSOR ) ) {
 
 		initialise_TSL();
-		sqm.initialise( tsl, &sensor_data.sqm, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
+		sqm.initialise( &tsl, &sensor_data.sqm, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
 	}
 
 	initialise_dbmeter();
@@ -206,7 +203,7 @@ void AWSSensorManager::initialise_sensors( void )
 
 void AWSSensorManager::initialise_TSL( void )
 {
-	if ( !tsl->begin() ) {
+	if ( !tsl.begin() ) {
 
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [ERROR] Could not find TSL2591.\n" );
@@ -216,8 +213,8 @@ void AWSSensorManager::initialise_TSL( void )
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [INFO ] Found TSL2591.\n" );
 
-		tsl->setGain( TSL2591_GAIN_LOW );
-		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
+		tsl.setGain( TSL2591_GAIN_LOW );
+		tsl.setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		available_sensors |= aws_device_t::TSL_SENSOR;
 	}
 }
@@ -251,7 +248,7 @@ void AWSSensorManager::read_dbmeter( void  )
 {
 	if ( ( available_sensors & aws_device_t::SPL_SENSOR ) == aws_device_t::SPL_SENSOR ) {
 
-		sensor_data.db = spl->read();
+		sensor_data.db = spl.read();
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [DEBUG] SPL = %ddB\n", sensor_data.db  );
 		return;
@@ -263,9 +260,9 @@ void AWSSensorManager::read_BME( void  )
 {
 	if ( ( available_sensors & aws_device_t::BME_SENSOR ) == aws_device_t::BME_SENSOR ) {
 
-		sensor_data.weather.temperature = bme->readTemperature();
-		sensor_data.weather.pressure = bme->readPressure() / 100.F;
-		sensor_data.weather.rh = bme->readHumidity();
+		sensor_data.weather.temperature = bme.readTemperature();
+		sensor_data.weather.pressure = bme.readPressure() / 100.F;
+		sensor_data.weather.rh = bme.readHumidity();
 
 		// "Arden Buck" equation
 		float gammaM = log( ( sensor_data.weather.rh / 100 )*exp( ( 18.68 - sensor_data.weather.temperature / 234.5 ) * ( sensor_data.weather.temperature / ( 257.14 + sensor_data.weather.temperature )) ));
@@ -294,9 +291,9 @@ void AWSSensorManager::read_MLX( void )
 {
 	if ( ( available_sensors & aws_device_t::MLX_SENSOR ) == aws_device_t::MLX_SENSOR ) {
 
-		sensor_data.weather.ambient_temperature = mlx->readAmbientTempC();
-		sensor_data.weather.sky_temperature = mlx->readObjectTempC();
-		sensor_data.weather.raw_sky_temperature = mlx->readObjectTempC();
+		sensor_data.weather.ambient_temperature = mlx.readAmbientTempC();
+		sensor_data.weather.sky_temperature = mlx.readObjectTempC();
+		sensor_data.weather.raw_sky_temperature = mlx.readObjectTempC();
 
 		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 ) {
 
@@ -355,10 +352,10 @@ void AWSSensorManager::read_TSL( void )
 
 	if ( ( available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR ) {
 
-		uint32_t lum = tsl->getFullLuminosity();
+		uint32_t lum = tsl.getFullLuminosity();
 		uint16_t ir = lum >> 16;
 		uint16_t full = lum & 0xFFFF;
-		lux = tsl->calculateLux( full, ir );
+		lux = tsl.calculateLux( full, ir );
 
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [DEBUG] Infrared=%05d Full=%05d Visible=%05d Lux = %05d\n", ir, full, full - ir, lux );
