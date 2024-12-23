@@ -86,7 +86,7 @@ class AWSConfig {
 
 	public:
 
-								AWSConfig( void ) : json_config( 3072 ) {};
+								AWSConfig( void ) = default;
 		bool					can_rollback( void );
 		void					factory_reset( void );
 		uint32_t				get_fs_free_space( void );
@@ -115,7 +115,7 @@ class AWSConfig {
 		aws_device_t			devices					= aws_device_t::NO_SENSOR;
 		uint32_t				fs_free_space			= 0;
 		bool					initialised				= false;
-		DynamicJsonDocument		json_config;
+		DynamicJsonDocument		json_config{3072};
 		etl::string<65>			ota_sha256;
 		std::array<uint8_t,16>	lora_appkey;
 		std::array<uint8_t,8>	lora_eui;
