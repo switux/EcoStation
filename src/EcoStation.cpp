@@ -914,8 +914,11 @@ void EcoStation::send_data( void )
 		Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
 	sensor_manager.encode_sensor_data();
 
-	// FIXME: make it config dependent (LoRa)
-	network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
+	if ( config.get_has_device( aws_device_t::LORAWAN_DEVICE ) )
+		network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
+	else
+		network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() );
+
 	store_unsent_data( etl::string_view( json_sensor_data ));
 
 	digitalWrite( GPIO_ENABLE_3_3V, LOW );
