@@ -36,6 +36,7 @@ bool dbmeter::control( dbm_control_t b )
 {
 	//b &= ~ 0xE0;	// stay on the safe side, turn last 3 bits to 0
 	//write_register( spl_hw_t::DBM_REG_CONTROL, b );
+	return false;
 }
 
 bool dbmeter::read_register( uint8_t reg, uint8_t sz, uint8_t *buf )

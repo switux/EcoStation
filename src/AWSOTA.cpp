@@ -68,25 +68,23 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 
 		if (( !board.size() || ( board == aws_board_id )) &&
 			( !device.size() || ( device == aws_device_id )) &&
-			( !config.size() || ( config == aws_config ))) {
+			( !config.size() || ( config == aws_config )) &&
+			( !version.size() || ( version > current_version ))) {
 
-			if ( !version.size() || ( version > current_version )) {
-
-				if ( action == ota_action_t::CHECK_ONLY )
-					return ota_status_t::UPDATE_AVAILABLE;
+			if ( action == ota_action_t::CHECK_ONLY )
+				return ota_status_t::UPDATE_AVAILABLE;
 				
-				if ( action == ota_action_t::UPDATE_AND_BOOT ) {
+			if ( action == ota_action_t::UPDATE_AND_BOOT ) {
 
-					ota_update_ongoing = true;
-					save_firmware_sha256( ota_config["SHA256"].as<const char *>() );
-				}
+				ota_update_ongoing = true;
+				save_firmware_sha256( ota_config["SHA256"].as<const char *>() );
+			}
 
-				if ( do_ota_update( ota_config["URL"], root_ca, action ))
-					return status_code;
+			if ( do_ota_update( ota_config["URL"], root_ca, action ))
+				return status_code;
 					
-				profile_match = true;
-			}
-			}
+			profile_match = true;
+		}
 	}
 	return profile_match ? ota_status_t::NO_UPDATE_AVAILABLE : ota_status_t::NO_UPDATE_PROFILE_FOUND;
 }
