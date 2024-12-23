@@ -48,16 +48,16 @@ class AWSSensorManager {
 
 	private:
 
-		Adafruit_BME280		*bme				= nullptr;
-		Adafruit_MLX90614	*mlx				= nullptr;
-		Adafruit_TSL2591	*tsl				= nullptr;
-		dbmeter				*spl				= nullptr;
+		Adafruit_BME280		bme;
+		Adafruit_MLX90614	mlx;
+		Adafruit_TSL2591	tsl;
+		dbmeter				spl;
 		SQM					sqm;
 		std::array<int,7>	k;
-		AWSConfig 			*config				= nullptr;
+		AWSConfig 			*config	= nullptr;
 
 		aws_device_t			available_sensors	= aws_device_t::NO_SENSOR;
-		compact_data_t			*compact_data;
+		compact_data_t			*compact_data		= nullptr;
 		sensor_data_t			sensor_data;
 		bool					debug_mode			= false;
 		bool					initialised			= false;
