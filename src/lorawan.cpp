@@ -187,39 +187,33 @@ void AWSLoraWAN::send( osjob_t *job )
 			Serial.println("[LORAWAN   ] [DEBUG] Transmission completed.");
 		}
 
-	Serial.printf("opmode=%x txrx=%x\n", LMIC.opmode, LMIC.txrxFlags );
-	
-		if ( ( LMIC.txrxFlags & ( TXRX_DNW1 | TXRX_DNW2 ))) {
+		if ( ( LMIC.txrxFlags & ( TXRX_DNW1 | TXRX_DNW2 )) && ( LMIC.dataLen > 0 ) ) {
 
-				if ( LMIC.dataLen > 0 ) {
-
-					Serial.printf( "[LORAWAN   ] [DEBUG] Downlink payload: [" );
-					for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
-						Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
-					Serial.printf( "]\n" );
-					uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
-					Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
-                    
-				}
-		}
-
-			if (LMIC.txrxFlags & TXRX_NOPORT) {
-				if ( LMIC.dataLen > 0 ) {
-
-					Serial.printf( "[LORAWAN   ] [DEBUG] No PORT Downlink payload: [" );
-					for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
-						Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
-					Serial.printf( "]\n" );
-					uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
-					Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
-                    
-				}
-		    }
-
-			delay( 100 );
+			Serial.printf( "[LORAWAN   ] [DEBUG] Downlink payload: [" );
+			for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+				Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+			Serial.printf( "]\n" );
+			uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
+			Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
 
 		}
-		Serial.printf( "[LORAWAN   ] [DEBUG] Packet %ssent\n", message_sent?"":"not "  );
+
+		if (( LMIC.txrxFlags & TXRX_NOPORT ) && ( LMIC.dataLen > 0 )) {
+
+			Serial.printf( "[LORAWAN   ] [DEBUG] No PORT Downlink payload: [" );
+			for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+				Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+			Serial.printf( "]\n" );
+			uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
+			Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
+                    
+	    }
+
+		delay( 100 );
+
+	}
+
+	Serial.printf( "[LORAWAN   ] [DEBUG] Packet %ssent\n", message_sent?"":"not "  );
 }
 
 void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )
