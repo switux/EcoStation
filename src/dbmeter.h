@@ -57,11 +57,10 @@ class dbmeter {
 
 	private:
 
-		bool		i2c_ok;
-		uint8_t		version;
-		uint8_t	device_id[4];
+		bool					i2c_ok;
+		uint8_t					version;
+		std::array<uint8_t,4>	device_id;
 
-		bool		control( dbm_control_t );
 		bool		get_device_id( void );
 		bool		get_version( void );
 		bool		read_register( uint8_t, uint8_t, uint8_t * );
