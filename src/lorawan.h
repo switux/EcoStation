@@ -36,11 +36,11 @@ class AWSLoraWAN
 {
 	private:
 
-		bool		debug_mode		= false;
-		bool		joined 			= false;
-		osjob_t		sendjob;
-		uint8_t		mydata[64];
-		uint32_t	mylen;
+		bool					debug_mode		= false;
+		bool					joined 			= false;
+		osjob_t					sendjob;
+		std::array<uint8_t,64>	mydata;
+		uint32_t				mylen;
 	
 		bool 	check_joined( void );
 
