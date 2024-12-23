@@ -213,6 +213,13 @@ bool EcoStation::enter_maintenance_mode( void )
 		while ( true );
 }
 
+void EcoStation::factory_reset( void )
+{
+	Serial.printf( "[STATION   ] [INFO ] Performing factory reset.\n ");
+	config.factory_reset();
+	reboot();
+}
+
 void EcoStation::fixup_timestamp( void )
 {
 	if ( !config.get_has_device( aws_device_t::RTC_DEVICE )) {
@@ -445,8 +452,8 @@ bool EcoStation::initialise( void )
 	ota_setup.version += ".";
 	ota_setup.version += BUILD_ID;
 
-//	if ( boot_mode == aws_boot_mode_t::FACTORY_RESET )
-//		factory_reset();
+	if ( boot_mode == aws_boot_mode_t::FACTORY_RESET )
+		factory_reset();
 
 	read_battery_level();
 

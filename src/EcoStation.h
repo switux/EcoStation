@@ -105,6 +105,7 @@ class EcoStation {
 		void 			determine_boot_mode( void );
 		void			display_banner( void );
 		bool			enter_maintenance_mode( void );
+		void			factory_reset( void );
 		void			fixup_timestamp( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
