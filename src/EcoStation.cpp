@@ -220,17 +220,17 @@ void EcoStation::factory_reset( void )
 	reboot();
 }
 
-void EcoStation::fixup_timestamp( void )
+bool EcoStation::fixup_timestamp( void )
 {
 	if ( !config.get_has_device( aws_device_t::RTC_DEVICE )) {
 
 		Serial.printf( "[STATION   ] [INFO ] RTC not present.\n");
-		return;
+		return false;
 	}
 	if ( !aws_rtc.begin() ) {
 
 		Serial.printf( "[STATION   ] [ERROR] RTC not found.\n");
-		return;
+		return false;
 	}
 	struct tm timeinfo;
 	aws_rtc.get_datetime( &timeinfo );
@@ -241,6 +241,7 @@ void EcoStation::fixup_timestamp( void )
 	strftime( d.data(), d.capacity(), "%Y-%m-%d %H:%M:%S", &timeinfo );
 	d.repair();
 	Serial.printf( "[STATION   ] [INFO ] RTC time: %s\n", d.data() );
+	return true;
 }
 
 int16_t EcoStation::float_to_int16_encode( float v, float min, float max )
@@ -1007,11 +1008,14 @@ bool EcoStation::sync_time( bool verbose )
 		last_ntp_time = sensor_manager.get_sensor_data()->timestamp;
 
 	} else {
-		// FIXME: check if RTC is available
-		// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
-		ntp_time_misses++;
-		sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
 
+		if ( !fixup_timestamp() ) {
+
+			// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
+			ntp_time_misses++;
+			sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+
+		}
 	}
 	return ntp_synced;
 }

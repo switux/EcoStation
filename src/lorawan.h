@@ -47,7 +47,7 @@ class AWSLoraWAN
 	public:
 
 				AWSLoraWAN( void ) = default;
-		bool	begin( const uint8_t *, const uint8_t *, bool );
+		bool	begin( std::array<uint8_t,8>, std::array<uint8_t,16>, bool );
 		bool	join( void );
 		bool	has_joined( void );
 		void	prepare_for_deep_sleep( int );

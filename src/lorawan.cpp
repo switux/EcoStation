@@ -48,12 +48,12 @@ void os_getDevKey( u1_t* buf )
 	memcpy_P( buf, APPKEY, 16 );
 }
 
-bool AWSLoraWAN::begin( const uint8_t *deveui, const uint8_t *appkey, bool _debug_mode )
+bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> appkey, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
 
-	memcpy_P( DEVEUI, deveui, 8 );
-	memcpy_P( APPKEY, appkey, 16 );
+	memcpy_P( DEVEUI, deveui.data(), 8 );
+	memcpy_P( APPKEY, appkey.data(), 16 );
 
 	os_init();
 	LMIC_reset();

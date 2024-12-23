@@ -108,25 +108,25 @@ etl::string_view AWSConfig::get_json_string_config( void )
 	return etl::string_view( json_string.data() );
 }
 
-uint8_t *AWSConfig::get_lora_appkey( void )
+std::array<uint8_t,16> AWSConfig::get_lora_appkey( void )
 {
 	return lora_appkey;
 }
 
 etl::string_view AWSConfig::get_lora_appkey_str( void )
 {
-	auto hex_string	= bytes_to_hex_string<16>( lora_appkey, 16 );
+	auto hex_string	= bytes_to_hex_string<16>( lora_appkey.data(), 16 );
 	return hex_string;
 }
 
-uint8_t *AWSConfig::get_lora_deveui( void )
+std::array<uint8_t,8> AWSConfig::get_lora_deveui( void )
 {
 	return lora_eui;
 }
 
 etl::string_view AWSConfig::get_lora_deveui_str( void )
 {
-	auto hex_string	= bytes_to_hex_string<8>( lora_eui, 8 );
+	auto hex_string	= bytes_to_hex_string<8>( lora_eui.data(), 8 );
 	return hex_string;
 }
 
@@ -332,14 +332,14 @@ bool AWSConfig::read_hw_info_from_nvs( etl::string<64> &firmware_sha56 )
 
 	if ( x ) {
 
-		if ( !nvs.getBytes( "lorawan_deveui", lora_eui, 8 )) {
+		if ( !nvs.getBytes( "lorawan_deveui", lora_eui.data(), 8 )) {
 
 			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN DEVEUI from NVS. Please contact support.\n" );
 			nvs.end();
 			return false;
 		}
 
-		if ( !nvs.getBytes( "lorawan_appkey", lora_appkey, 16 )) {
+		if ( !nvs.getBytes( "lorawan_appkey", lora_appkey.data(), 16 )) {
 
 			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN APPKEY from NVS. Please contact support.\n" );
 			nvs.end();

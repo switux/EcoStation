@@ -94,9 +94,9 @@ class AWSConfig {
 		T 						get_parameter( const char * );
 		bool					get_has_device( aws_device_t );
 		etl::string_view		get_json_string_config( void );
-		uint8_t					*get_lora_appkey( void );
+		std::array<uint8_t,16>	get_lora_appkey( void );
 		etl::string_view		get_lora_appkey_str( void );
-		uint8_t					*get_lora_deveui( void );
+		std::array<uint8_t,8>	get_lora_deveui( void );
 		etl::string_view		get_lora_deveui_str( void );
 		etl::string_view		get_ota_sha256( void );
 		etl::string_view		get_pcb_version( void );
@@ -110,18 +110,18 @@ class AWSConfig {
 
 	private:
 
-		const size_t		MAX_CONFIG_FILE_SIZE	= 2048;
-		bool				debug_mode				= false;
-		aws_device_t		devices					= aws_device_t::NO_SENSOR;
-		uint32_t			fs_free_space			= 0;
-		bool				initialised				= false;
-		DynamicJsonDocument	json_config;
-		etl::string<65>		ota_sha256;
-		uint8_t				lora_appkey[16];	// NOSONAR
-		uint8_t				lora_eui[8];		// NOSONAR
-		etl::string<8>		pcb_version;
-		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
-		etl::string<4096>	root_ca;
+		const size_t			MAX_CONFIG_FILE_SIZE	= 2048;
+		bool					debug_mode				= false;
+		aws_device_t			devices					= aws_device_t::NO_SENSOR;
+		uint32_t				fs_free_space			= 0;
+		bool					initialised				= false;
+		DynamicJsonDocument		json_config;
+		etl::string<65>			ota_sha256;
+		std::array<uint8_t,16>	lora_appkey;
+		std::array<uint8_t,8>	lora_eui;
+		etl::string<8>			pcb_version;
+		aws_pwr_src				pwr_mode				= aws_pwr_src::dc12v;
+		etl::string<4096>		root_ca;
 		template<size_t N>
 		etl::string<N*2>	bytes_to_hex_string( const uint8_t *, size_t  ) const;
 		template <typename T>
