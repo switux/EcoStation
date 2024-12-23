@@ -593,6 +593,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 	for( JsonPair item : config_items ) {
 
+		// Cloud coverage
 		switch( str2int( item.key().c_str() )) {
 
 			case str2int( "cc_aag_cloudy" ):
@@ -607,6 +608,14 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "k5" ):
 			case str2int( "k6" ):
 			case str2int( "k7" ):
+				continue;
+			default:
+				break;
+		}
+
+		// Network
+		switch( str2int( item.key().c_str() )) {
+	
 			case str2int( "ota_url" ):
 			case str2int( "pref_iface" ):
 			case str2int( "push_freq" ):
@@ -626,9 +635,19 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "wifi_sta_ip_mode" ):
 			case str2int( "wifi_sta_password" ):
 			case str2int( "wifi_sta_ssid" ):
-				break;
+				continue;
 			case str2int( "automatic_updates" ):
 			case str2int( "data_push" ):
+				proposed_config[ item.key().c_str() ] = 1;
+				continue;
+				break;
+			default:
+				break;
+		}
+
+		// Sensors
+		switch( str2int( item.key().c_str() )) {
+
 			case str2int( "has_bme" ):
 			case str2int( "has_mlx" ):
 			case str2int( "has_spl" ):
