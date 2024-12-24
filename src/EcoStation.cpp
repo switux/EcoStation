@@ -89,32 +89,8 @@ void EcoStation::check_ota_updates( bool force_update = false )
 	ota.set_progress_callback( OTA_callback );
 	ota_setup.last_update_ts = get_timestamp();
 
-	ota_retcode = ota.check_for_update( config.get_parameter<const char *>( "ota_url" ), config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
-	Serial.printf( "[STATION   ] [INFO ] Firmware OTA update result: (%d) %s.\n", ota_retcode, OTA_message( ota_retcode ));
+	ota_setup.status_code = ota.check_for_update( config.get_parameter<const char *>( "ota_url" ), config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
 	ota_update_ongoing = false;
-}
-
-void EcoStation::compute_uptime( void )
-{
-	if ( !on_solar_panel() )
-
-		station_data.health.uptime = round( esp_timer_get_time() / 1000000 );
-
-	else {
-
-  		time_t now;
-  		time( &now );
-  		if ( !boot_timestamp ) {
-
-  			station_data.health.uptime = round( esp_timer_get_time() / 1000000 );
-  			boot_timestamp = now - station_data.health.uptime;
-
-  		} else
-
-  			station_data.health.uptime = now - boot_timestamp;
-
-  		compact_data.uptime = station_data.health.uptime;
-  	}
 }
 
 void EcoStation::determine_boot_mode( void )
@@ -279,7 +255,7 @@ uint16_t EcoStation::get_config_port( void )
 
 etl::string_view EcoStation::get_json_sensor_data( void )
 {
-	DynamicJsonDocument	json_data(860);
+	JsonDocument		json_data;
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
 	int					l;
 
@@ -367,7 +343,25 @@ time_t EcoStation::get_timestamp( void )
 
 uint32_t EcoStation::get_uptime( void )
 {
-	compute_uptime();
+	if ( !on_solar_panel() )
+
+		station_data.health.uptime = round( esp_timer_get_time() / 1000000 );
+
+	else {
+
+  		time_t now;
+  		time( &now );
+  		if ( !boot_timestamp ) {
+
+  			station_data.health.uptime = round( esp_timer_get_time() / 1000000 );
+  			boot_timestamp = now - station_data.health.uptime;
+
+  		} else
+
+  			station_data.health.uptime = now - boot_timestamp;
+
+  		compact_data.uptime = station_data.health.uptime;
+  	}
 	return station_data.health.uptime;
 }
 
@@ -503,45 +497,6 @@ void OTA_callback( int offset, int total_length )
 		percentage = p;
 	}
 	esp_task_wdt_reset();
-}
-
-const char *EcoStation::OTA_message( ota_status_t code )
-{
-	ota_setup.status_code = code;
-	switch ( code ) {
-
-		case ota_status_t::UPDATE_AVAILABLE:
-			return "An update is available but wasn't installed";
-
-		case ota_status_t::NO_UPDATE_PROFILE_FOUND:
-			return "No profile matches";
-
-		case ota_status_t::NO_UPDATE_AVAILABLE:
-			return "Profile matched, but update not applicable";
-
-		case ota_status_t::UPDATE_OK:
-			return "An update was done, but no reboot";
-
-		case ota_status_t::HTTP_FAILED:
-			return "HTTP GET failure";
-
-		case ota_status_t::WRITE_ERROR:
-			return "Write error";
-
-		case ota_status_t::JSON_PROBLEM:
-			return "Invalid JSON";
-
-		case ota_status_t::OTA_UPDATE_FAIL:
-			return "Update failure (no OTA partition?)";
-
-		case ota_status_t::CONFIG_ERROR:
-			return "OTA config has a problem";
-
-		case ota_status_t::UNKNOWN:
-			return "Undefined status";
-
-	}
-	return "Unhandled OTA status code";
 }
 
 void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
@@ -774,7 +729,7 @@ void EcoStation::report_unavailable_sensors( void )
 
 void EcoStation::send_alarm( const char *subject, const char *message )
 {
-	DynamicJsonDocument content( 512 );
+	JsonDocument content;
 	// flawfinder: ignore
 	char jsonString[ 600 ];	// NOSONAR
 	content["subject"] = subject;
