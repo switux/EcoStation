@@ -35,20 +35,34 @@ extern EcoStation	station;
 
 ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY) {
 
-	if ( !download_json( url, root_ca ))
-		return ota_status_t::HTTP_FAILED;
+	ota_status_t ota_status;
 
-	if (!aws_board_id.size() || !aws_config.size() || !aws_device_id.size())
-		return ota_status_t::CONFIG_ERROR;
+	if ( !download_json( url, root_ca )) {
+
+		ota_status = ota_status_t::HTTP_FAILED;
+		goto exit;
+	}
+
+	if (!aws_board_id.size() || !aws_config.size() || !aws_device_id.size()) {
+
+		ota_status = ota_status_t::CONFIG_ERROR;
+		goto exit;
+	}
 
 	for (auto ota_config : json_ota_config["Configurations"].as<JsonArray>()) {
 
-		if (is_profile_match(ota_config, current_version))
-			return handle_action(ota_config, root_ca, action);
+		if (is_profile_match(ota_config, current_version)) {
 
+			ota_status = handle_action(ota_config, root_ca, action);
+			break;
+		}
     }
 
-	return ota_status_t::NO_UPDATE_PROFILE_FOUND;
+	ota_status = ota_status_t::NO_UPDATE_PROFILE_FOUND;
+
+exit:
+	Serial.printf( "[OTA       ] [INFO ] Firmware OTA update result: (%d) %s.\n", ota_status, OTA_message( ota_status ));
+	return ota_status;
 }
 
 bool AWSOTA::is_profile_match( const JsonObject &ota_config, const etl::string<26> &current_version )
@@ -181,6 +195,44 @@ bool AWSOTA::download_json( const char *url, const char *root_ca )
 
 	http.end();
 	return (( http_status == 200 ) && ( deserialisation_status == DeserializationError::Ok ));
+}
+
+const char *AWSOTA::OTA_message( ota_status_t code )
+{
+	switch ( code ) {
+
+		case ota_status_t::UPDATE_AVAILABLE:
+			return "An update is available but wasn't installed";
+
+		case ota_status_t::NO_UPDATE_PROFILE_FOUND:
+			return "No profile matches";
+
+		case ota_status_t::NO_UPDATE_AVAILABLE:
+			return "Profile matched, but update not applicable";
+
+		case ota_status_t::UPDATE_OK:
+			return "An update was done, but no reboot";
+
+		case ota_status_t::HTTP_FAILED:
+			return "HTTP GET failure";
+
+		case ota_status_t::WRITE_ERROR:
+			return "Write error";
+
+		case ota_status_t::JSON_PROBLEM:
+			return "Invalid JSON";
+
+		case ota_status_t::OTA_UPDATE_FAIL:
+			return "Update failure (no OTA partition?)";
+
+		case ota_status_t::CONFIG_ERROR:
+			return "OTA config has a problem";
+
+		case ota_status_t::UNKNOWN:
+			return "Undefined status";
+
+	}
+	return "Unhandled OTA status code";
 }
 
 void AWSOTA::save_firmware_sha256( const char *sha256 )

@@ -100,7 +100,6 @@ class EcoStation {
 		station_data_t				station_data;
 
 		bool			connect_to_wifi( void );
-		void			compute_uptime( void );
 		void 			determine_boot_mode( void );
 		void			display_banner( void );
 		bool			enter_maintenance_mode( void );
@@ -110,7 +109,6 @@ class EcoStation {
 		etl::string<96>	format_helper( const char *, Args... );
 		bool			initialise_network( void );
 		bool			initialise_wifi( void );
-		const char		*OTA_message( ota_status_t );
 		void			periodic_tasks( void * );
 		bool			post_content( const char *, const char * );
 		template<typename... Args>

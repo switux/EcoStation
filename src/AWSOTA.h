@@ -62,7 +62,7 @@ class AWSOTA {
 		etl::string_view				aws_device_id;
 		DeserializationError			deserialisation_status;
 		int								http_status;
-		DynamicJsonDocument				json_ota_config{ 6000 };
+		JsonDocument					json_ota_config;
 		std::function<void (int, int)>	progress_callback		= nullptr;
 		ota_status_t					status_code				= ota_status_t::UNKNOWN;
 
@@ -70,6 +70,7 @@ class AWSOTA {
 		bool			download_json( const char *, const char * );
 		ota_status_t	handle_action( const JsonObject &, const char *, ota_action_t );
 		bool			is_profile_match( const JsonObject &, const etl::string<26> & );
+		const char		*OTA_message( ota_status_t );
 		void			save_firmware_sha256( const char * );
 
 };
