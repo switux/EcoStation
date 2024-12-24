@@ -277,11 +277,6 @@ uint16_t EcoStation::get_config_port( void )
 	return config.get_parameter<int>( "config_port" );
 }
 
-bool EcoStation::get_debug_mode( void )
-{
-	return debug_mode;
-}
-
 etl::string_view EcoStation::get_json_sensor_data( void )
 {
 	DynamicJsonDocument	json_data(860);
@@ -345,11 +340,6 @@ etl::string_view EcoStation::get_json_string_config( void )
 	return etl::string_view( config.get_json_string_config() );
 }
 
-etl::string_view EcoStation::get_location( void )
-{
-	return etl::string_view( location );
-}
-
 etl::string_view EcoStation::get_root_ca( void )
 {
 	return config.get_root_ca();
@@ -375,31 +365,10 @@ time_t EcoStation::get_timestamp( void )
 	return now;
 }
 
-etl::string_view EcoStation::get_unique_build_id( void )
-{
-	return etl::string_view( ota_setup.version );
-}
-
 uint32_t EcoStation::get_uptime( void )
 {
 	compute_uptime();
 	return station_data.health.uptime;
-}
-
-bool EcoStation::has_device( aws_device_t device )
-{
-	switch ( device ) {
-		case aws_device_t::MLX_SENSOR:
-		case aws_device_t::TSL_SENSOR:
-		case aws_device_t::BME_SENSOR:
-		case aws_device_t::SPL_SENSOR:
-		case aws_device_t::RTC_DEVICE:
-		case aws_device_t::SDCARD_DEVICE:
-		case aws_device_t::LORAWAN_DEVICE:
-			return config.get_has_device( device );
-		default:
-			return false;
-	}
 }
 
 bool EcoStation::initialise( void )
@@ -512,19 +481,9 @@ void EcoStation::initialise_sensors( void )
 	sensor_manager.initialise_sensors();
 }
 
-bool EcoStation::is_ntp_synced( void )
-{
-	return ntp_synced;
-}
-
 bool EcoStation::is_ready( void )
 {
 	return ready;
-}
-
-bool EcoStation::is_sensor_initialised( aws_device_t sensor_id )
-{
-	return (( sensor_manager.get_available_sensors() & sensor_id ) == sensor_id );
 }
 
 bool EcoStation::on_solar_panel( void )
@@ -829,81 +788,6 @@ void EcoStation::send_alarm( const char *subject, const char *message )
 	serializeJson( content, jsonString );
 }
 
-void EcoStation::send_backlog_data( void )
-{
-	etl::string<1024> line;
-	bool	empty = true;
-
-	unselect_spi_devices();
-
-	if ( !SD.begin( GPIO_SD_CS ) ) {
-
-		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
-		return;
-	}
-
-	if ( !SD.exists( "/backlog.txt" )) {
-
-		Serial.printf( "[STATION   ] [INFO ] No backlog file.\n" );
-		return;
-
-	}
-	// flawfinder: ignore
-	File backlog = SD.open( "/backlog.txt", FILE_READ );
-
-	if ( !backlog ) {
-
-		Serial.printf( "[STATION   ] [ERROR] Cannot open backlog file.\n" );
-		return;
-	}
-
-	if ( !backlog.size() ) {
-
-		backlog.close();
-
-		if ( debug_mode )
-			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
-		return;
-	}
-
-	// flawfinder: ignore
-	File new_backlog = SD.open( "/backlog.new", FILE_WRITE );
-
-	while ( backlog.available() ) {
-
-		int	i = backlog.readBytesUntil( '\n', line.data(), line.capacity() - 1 );
-		if ( !i )
-			break;
-		line[i] = '\0';
-		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
-
-			empty = false;
-			// flawfinder: ignore
-			if ( new_backlog.printf( "%s\n", line.data() ) != ( 1 + line.size() ))
-				Serial.printf( "[STATION   ] [ERROR] Could not write data into the backlog.\n" );
-
-		}
-	}
-
-	new_backlog.close();
-	backlog.close();
-
-	if ( !empty ) {
-
-		SD.remove( "/backlog.txt" );
-		SD.rename( "/backlog.new", "/backlog.txt" );
-		if ( debug_mode )
-			Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
-
-	} else {
-
-		SD.remove( "/backlog.txt" );
-		SD.remove( "/backlog.new" );
-		if ( debug_mode )
-			Serial.printf( "[STATION   ] [DEBUG] Data backlog is empty.\n");
-	}
-}
-
 void EcoStation::send_data( void )
 {
 	bool lora_data_sent = false;
@@ -1034,22 +918,4 @@ void EcoStation::unselect_spi_devices( void )
 bool EcoStation::update_config( JsonVariant &proposed_config )
 {
 	return config.save_runtime_configuration( proposed_config );
-}
-
-void EcoStation::wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wakeup_string )
-{
-	switch ( wakeup_reason ) {
-
-		case ESP_SLEEP_WAKEUP_EXT0 :
-			snprintf( wakeup_string, 49, "Awakened by RTC IO: Rain event!" );
-			break;
-
-		case ESP_SLEEP_WAKEUP_TIMER :
-			snprintf( wakeup_string, 49, "Awakened by timer" );
-			break;
-
-		default :
-			snprintf( wakeup_string, 49, "Awakened by other: %d", wakeup_reason );
-			break;
-	}
 }

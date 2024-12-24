@@ -170,21 +170,6 @@ bool AWSNetwork::is_wifi_connected( void )
     return (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() ));
 }
 
-byte AWSNetwork::mask_to_cidr( uint32_t subnet )
-{
-	byte		cidr 	= 0;
-	uint32_t	mask 	= 0x80000000;
-	uint32_t	x 		= ntohl( subnet );
-
-	while ( mask != 0 ) {
-		if (( x & mask ) != mask )
-			break;
-		cidr++;
-		mask >>= 1;
-	}
-	return cidr;
-}
-
 bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const char *jsonString )
 {
 	uint8_t				fe_len;

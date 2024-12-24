@@ -99,7 +99,6 @@ class EcoStation {
 		bool						solar_panel;
 		station_data_t				station_data;
 
-		IPAddress		cidr_to_mask( byte );
 		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
 		void 			determine_boot_mode( void );
@@ -111,7 +110,6 @@ class EcoStation {
 		etl::string<96>	format_helper( const char *, Args... );
 		bool			initialise_network( void );
 		bool			initialise_wifi( void );
-		byte			mask_to_cidr( uint32_t );
 		const char		*OTA_message( ota_status_t );
 		void			periodic_tasks( void * );
 		bool			post_content( const char *, const char * );
@@ -120,11 +118,9 @@ class EcoStation {
 		void			print_runtime_config( void );
 		void			read_battery_level( void );
 		int				reformat_ca_root_line( std::array<char,116> &, int, int, int, const char * );
-		void			send_backlog_data( void );
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
 		bool			store_unsent_data( etl::string_view );
-		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
 	public:
 
@@ -133,23 +129,17 @@ class EcoStation {
 		void				check_ota_updates( bool );
 		int16_t				float_to_int16_encode( float, float, float );
 		int32_t				float_to_int32_encode( float, float, float );
-		bool				get_debug_mode( void );
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );
 		uint16_t			get_config_port( void );
 		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
-		etl::string_view	get_location( void );
 		etl::string_view	get_root_ca( void );
 		time_t				get_timestamp( void );
-		etl::string_view	get_unique_build_id( void );
 		uint32_t			get_uptime( void );
-		bool				has_device( aws_device_t );
 		bool				initialise( void );
 		void				initialise_sensors( void );
-		bool				is_sensor_initialised( aws_device_t );
 		bool				is_ready( void );
-		bool				is_ntp_synced( void );
 		bool				on_solar_panel();
 		bool				poll_sensors( void );
 		void				prepare_for_deep_sleep( int );
