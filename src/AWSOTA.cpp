@@ -33,57 +33,66 @@
 extern bool	ota_update_ongoing;			// NOSONAR
 extern EcoStation	station;
 
-ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY )
-{
-	etl::string<32>	board;
-	etl::string<32>	config;
-	int				deserialisation_status;
-	etl::string<32>	device;
-	bool			profile_match = false;
-	etl::string<32>	version;
+ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY) {
 
 	if ( !download_json( url, root_ca ))
-		return status_code;
+		return ota_status_t::HTTP_FAILED;
 
-	if ( !aws_board_id.size() || !aws_config.size() || !aws_device_id.size() )
+	if (!aws_board_id.size() || !aws_config.size() || !aws_device_id.size())
 		return ota_status_t::CONFIG_ERROR;
 
-	for( auto ota_config : json_ota_config["Configurations"].as<JsonArray>() ) {
+	for (auto ota_config : json_ota_config["Configurations"].as<JsonArray>()) {
 
-		if ( ota_config.containsKey( "Board" ))
-			board.assign( ota_config["Board"].as<const char *>() );
+		if (is_profile_match(ota_config, current_version))
+			return handle_action(ota_config, root_ca, action);
 
-		if ( ota_config.containsKey( "Device" ))
-			device.assign( ota_config["Device"].as<const char *>() );
+    }
 
-		if ( ota_config.containsKey( "Config" ))
-			config.assign( ota_config["Config"].as<const char *>() );
-
-		if ( ota_config.containsKey( "Version" ))
-			version.assign( ota_config["Version"].as<const char *>() );
-
-		if (( !board.size() || ( board == aws_board_id )) &&
-			( !device.size() || ( device == aws_device_id )) &&
-			( !config.size() || ( config == aws_config )) &&
-			( !version.size() || ( version > current_version ))) {
-
-			if ( action == ota_action_t::CHECK_ONLY )
-				return ota_status_t::UPDATE_AVAILABLE;
-				
-			if ( action == ota_action_t::UPDATE_AND_BOOT ) {
-
-				ota_update_ongoing = true;
-				save_firmware_sha256( ota_config["SHA256"].as<const char *>() );
-			}
-
-			if ( do_ota_update( ota_config["URL"], root_ca, action ))
-				return status_code;
-					
-			profile_match = true;
-		}
-	}
-	return profile_match ? ota_status_t::NO_UPDATE_AVAILABLE : ota_status_t::NO_UPDATE_PROFILE_FOUND;
+	return ota_status_t::NO_UPDATE_PROFILE_FOUND;
 }
+
+bool AWSOTA::is_profile_match( const JsonObject &ota_config, const etl::string<26> &current_version )
+{
+	etl::string<32> board;
+	etl::string<32>	device;
+	etl::string<32>	config;
+	etl::string<32> version;
+
+    if ( ota_config.containsKey("Board") )
+        board.assign( ota_config["Board"].as<const char *>() );
+
+    if ( ota_config.containsKey("Device") )
+		device.assign( ota_config["Device"].as<const char *>() );
+
+    if ( ota_config.containsKey("Config") )
+		config.assign( ota_config["Config"].as<const char *>() );
+
+    if ( ota_config.containsKey("Version") )
+		version.assign( ota_config["Version"].as<const char *>() );
+
+    return ( !board.size() || (board == aws_board_id) ) &&
+           ( !device.size() || (device == aws_device_id) ) &&
+           ( !config.size() || (config == aws_config) ) &&
+           ( !version.size() || (version > current_version) );
+}
+
+ota_status_t AWSOTA::handle_action( const JsonObject &ota_config, const char *root_ca, ota_action_t action )
+{
+	if ( action == ota_action_t::CHECK_ONLY )
+		return ota_status_t::UPDATE_AVAILABLE;
+
+    if ( action == ota_action_t::UPDATE_AND_BOOT ) {
+
+		ota_update_ongoing = true;
+		save_firmware_sha256(ota_config["SHA256"].as<const char *>());
+	}
+
+	if ( !do_ota_update( ota_config["URL"], root_ca, action ))
+		return ota_status_t::OTA_UPDATE_FAIL;
+
+	return ota_status_t::UPDATE_OK;
+}
+
 
 bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t action )
 {
