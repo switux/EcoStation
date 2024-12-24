@@ -47,7 +47,9 @@
 			border-top: 0px solid;
 			border-left: 0px solid;
 			border-right: 0px solid;
+			border-bottom: 0px solid;
 			border-radius: 10px 10px 0px 0px;
+			font-size: 11pt;
 			padding: 10px;
 			cursor: zoom-in;
 			display: flex;
@@ -99,15 +101,17 @@
 		@keyframes blink { 50% { opacity: 0; } }
 	</style>
 	<script src="/aws.js"></script>
+		<script src="file:///home/lesage/Arduino/EcoStation/data/aws.js"></script>
+
 </head>
 	
 <body onload="retrieve_data();">
 
 	<div id="banners" style="display:flex; flex-direction: row">
-		<div id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
-		<div id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
-		<div id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
-		<div id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
+		<button id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" tabIndex="0">General</button>
+		<button id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" tabIndex="0">Network</button>
+		<button id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" tabIndex="0">Sensors</button>
+		<button id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" tabIndex="0">Dashboard</button>
 	</div> <!-- banners -->
 
 	<form method="post" action="" id="config"/>
