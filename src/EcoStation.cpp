@@ -87,7 +87,7 @@ void EcoStation::check_ota_updates( bool force_update = false )
 	ota.set_aws_device_id( ota_setup.device );
 	ota.set_aws_config( ota_setup.config );
 	ota.set_progress_callback( OTA_callback );
-	ota_setup.last_update_ts = get_timestamp();
+	time( &ota_setup.last_update_ts );
 
 	ota_setup.status_code = ota.check_for_update( config.get_parameter<const char *>( "ota_url" ), config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
 	ota_update_ongoing = false;
@@ -179,7 +179,7 @@ bool EcoStation::enter_maintenance_mode( void )
 
 	}
 
-	if ( !start_config_server() ) {
+	if ( !server.initialise( debug_mode )) {
 
 		Serial.printf( "[STATION   ] [PANIC ] Failed to start WiFi AP, cannot enter maintenance mode.\n" );
 		return false;
@@ -220,26 +220,6 @@ bool EcoStation::fixup_timestamp( void )
 	return true;
 }
 
-int16_t EcoStation::float_to_int16_encode( float v, float min, float max )
-{
-	if ( v < min )
-		v = min;
-	else if ( v > max )
-		v = max;
-
-	return static_cast<int16_t>( v * 100 );
-}
-
-int32_t EcoStation::float_to_int32_encode( float v, float min, float max )
-{
-	if ( v < min )
-		v = min;
-	else if ( v > max )
-		v = max;
-
-	return static_cast<int32_t>( v * 100 );
-}
-
 template<typename... Args>
 etl::string<96> EcoStation::format_helper( const char *fmt, Args... args )
 {
@@ -248,9 +228,9 @@ etl::string<96> EcoStation::format_helper( const char *fmt, Args... args )
 	return etl::string<96>( buf );
 }
 
-uint16_t EcoStation::get_config_port( void )
+AWSConfig &EcoStation::get_config( void )
 {
-	return config.get_parameter<int>( "config_port" );
+	return config;
 }
 
 etl::string_view EcoStation::get_json_sensor_data( void )
@@ -311,34 +291,9 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 	return etl::string_view( json_sensor_data );
 }
 
-etl::string_view EcoStation::get_json_string_config( void )
-{
-	return etl::string_view( config.get_json_string_config() );
-}
-
-etl::string_view EcoStation::get_root_ca( void )
-{
-	return config.get_root_ca();
-}
-
 sensor_data_t *EcoStation::get_sensor_data( void )
 {
 	return sensor_manager.get_sensor_data();
-}
-
-station_data_t *EcoStation::get_station_data( void )
-{
-	return &station_data;
-}
-
-time_t EcoStation::get_timestamp( void )
-{
-	time_t now = 0;
-
-	if ( ntp_synced || config.get_has_device( aws_device_t::RTC_DEVICE ))
-		time( &now );
-
-	return now;
 }
 
 uint32_t EcoStation::get_uptime( void )
@@ -440,7 +395,7 @@ bool EcoStation::initialise( void )
 
 	} else {
 
-		start_config_server();
+		server.initialise( debug_mode );
 		sync_time( true );
 		fixup_timestamp();
 	}
@@ -640,7 +595,7 @@ void EcoStation::read_battery_level( void )
 
 	adc_value /= 5;
 	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
-	compact_data.battery_level = float_to_int16_encode( station_data.health.battery_level, 0, 100 );
+	compact_data.battery_level = sensor_manager.float_to_int16_encode( station_data.health.battery_level, 0, 100 );
 
 	if ( debug_mode ) {
 
@@ -774,17 +729,11 @@ void EcoStation::send_data( void )
 		xSemaphoreGive( sensors_read_mutex );
 }
 
-bool EcoStation::start_config_server( void )
-{
-	server.initialise( debug_mode );
-	return true;
-}
-
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
 	bool ok;
 
-	unselect_spi_devices();
+	UNSELECT_SPI_DEVICES();
 
 	if ( !SD.begin( GPIO_SD_CS ) ) {
 
@@ -862,15 +811,4 @@ bool EcoStation::sync_time( bool verbose )
 void EcoStation::trigger_ota_update( void )
 {
 	force_ota_update = true;
-}
-
-void EcoStation::unselect_spi_devices( void )
-{
-	digitalWrite( GPIO_SD_CS, HIGH );
-	digitalWrite( GPIO_LORA_CS, HIGH );
-}
-
-bool EcoStation::update_config( JsonVariant &proposed_config )
-{
-	return config.save_runtime_configuration( proposed_config );
 }

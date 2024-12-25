@@ -130,7 +130,7 @@ void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
-	station.unselect_spi_devices();
+	UNSELECT_SPI_DEVICES();
 
 	lorawan.begin( _config->get_lora_deveui(), _config->get_lora_appkey(), _debug_mode );
 	initialise_wifi();
@@ -221,7 +221,7 @@ void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
-	station.unselect_spi_devices();
+	UNSELECT_SPI_DEVICES();
 	if ( lorawan.join() )
 		lorawan.send_data( buffer, len );
 }
