@@ -42,6 +42,12 @@ const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in m
 const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
 const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
+#define UNSELECT_SPI_DEVICES()	\
+	do {\
+		digitalWrite( GPIO_SD_CS, HIGH ); \
+		digitalWrite( GPIO_LORA_CS, HIGH ); \
+	} while(0)
+
 enum struct aws_ip_info : uint8_t
 {
 	ETH_DNS,
@@ -69,7 +75,7 @@ struct ota_setup_t {
 	etl::string<26>	version;
 	ota_status_t	status_code		= ota_status_t::UNKNOWN;
 	int32_t			status_ts		= 0;
-	int32_t			last_update_ts	= 0;
+	time_t			last_update_ts	= 0;
 };
 
 void OTA_callback( int, int );
@@ -99,7 +105,6 @@ class EcoStation {
 		bool						solar_panel;
 		station_data_t				station_data;
 
-		bool			connect_to_wifi( void );
 		void 			determine_boot_mode( void );
 		void			display_banner( void );
 		bool			enter_maintenance_mode( void );
@@ -107,8 +112,6 @@ class EcoStation {
 		bool			fixup_timestamp( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
-		bool			initialise_network( void );
-		bool			initialise_wifi( void );
 		void			periodic_tasks( void * );
 		bool			post_content( const char *, const char * );
 		template<typename... Args>
@@ -116,8 +119,6 @@ class EcoStation {
 		void			print_runtime_config( void );
 		void			read_battery_level( void );
 		int				reformat_ca_root_line( std::array<char,116> &, int, int, int, const char * );
-		bool			start_config_server( void );
-		bool			start_hotspot( void );
 		bool			store_unsent_data( etl::string_view );
 
 	public:
@@ -125,15 +126,9 @@ class EcoStation {
 							EcoStation( void );
 		bool				activate_sensors( void );
 		void				check_ota_updates( bool );
-		int16_t				float_to_int16_encode( float, float, float );
-		int32_t				float_to_int32_encode( float, float, float );
+		AWSConfig			&get_config( void );
 		sensor_data_t		*get_sensor_data( void );
-		station_data_t		*get_station_data( void );
-		uint16_t			get_config_port( void );
 		etl::string_view	get_json_sensor_data( void );
-		etl::string_view	get_json_string_config( void );
-		etl::string_view	get_root_ca( void );
-		time_t				get_timestamp( void );
 		uint32_t			get_uptime( void );
 		bool				initialise( void );
 		void				initialise_sensors( void );
@@ -148,8 +143,6 @@ class EcoStation {
 		void				send_data( void );
 		bool				sync_time( bool );
 		void				trigger_ota_update( void );
-		void				unselect_spi_devices( void );
-		bool				update_config( JsonVariant & );
 };
 
 #endif

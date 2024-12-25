@@ -69,6 +69,8 @@ class AWSSensorManager {
 	public:
     							AWSSensorManager( void );
 		bool					begin( void );
+		int16_t					float_to_int16_encode( float, float, float );
+		int32_t					float_to_int32_encode( float, float, float );
 		aws_device_t			get_available_sensors( void );
 		bool					get_debug_mode( void );
 		SemaphoreHandle_t		get_i2c_mutex( void );

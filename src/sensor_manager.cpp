@@ -91,6 +91,26 @@ AWSSensorManager::AWSSensorManager( void ) :
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
 }
 
+int16_t AWSSensorManager::float_to_int16_encode( float v, float min, float max )
+{
+	if ( v < min )
+		v = min;
+	else if ( v > max )
+		v = max;
+
+	return static_cast<int16_t>( v * 100 );
+}
+
+int32_t AWSSensorManager::float_to_int32_encode( float v, float min, float max )
+{
+	if ( v < min )
+		v = min;
+	else if ( v > max )
+		v = max;
+
+	return static_cast<int32_t>( v * 100 );
+}
+
 aws_device_t AWSSensorManager::get_available_sensors( void )
 {
 	return available_sensors;
@@ -373,21 +393,21 @@ void AWSSensorManager::encode_sensor_data( void )
 
 	compact_data->timestamp = sensor_data.timestamp;
 
-	compact_data->lux = station.float_to_int32_encode( sensor_data.sun.lux, 0, 80000 );
-	compact_data->irradiance = station.float_to_int16_encode( sensor_data.sun.irradiance, 0, 1000 );
+	compact_data->lux = float_to_int32_encode( sensor_data.sun.lux, 0, 80000 );
+	compact_data->irradiance = float_to_int16_encode( sensor_data.sun.irradiance, 0, 1000 );
 
-	compact_data->temperature = station.float_to_int16_encode( sensor_data.weather.temperature, -40, 50 );
-	compact_data->pressure = station.float_to_int32_encode( sensor_data.weather.pressure, 700, 1050 );
-	compact_data->rh = station.float_to_int16_encode( sensor_data.weather.rh, 0, 100 );
+	compact_data->temperature = float_to_int16_encode( sensor_data.weather.temperature, -40, 50 );
+	compact_data->pressure = float_to_int32_encode( sensor_data.weather.pressure, 700, 1050 );
+	compact_data->rh = float_to_int16_encode( sensor_data.weather.rh, 0, 100 );
 
-	compact_data->ambient_temperature = station.float_to_int16_encode( sensor_data.weather.ambient_temperature, -40, 50 );
-	compact_data->raw_sky_temperature = station.float_to_int16_encode( sensor_data.weather.raw_sky_temperature, -100, 50 );
-	compact_data->sky_temperature = station.float_to_int16_encode( sensor_data.weather.sky_temperature, -100, 50 );
-	compact_data->cloud_cover = station.float_to_int16_encode( sensor_data.weather.cloud_cover, -100, 50 );
+	compact_data->ambient_temperature = float_to_int16_encode( sensor_data.weather.ambient_temperature, -40, 50 );
+	compact_data->raw_sky_temperature = float_to_int16_encode( sensor_data.weather.raw_sky_temperature, -100, 50 );
+	compact_data->sky_temperature = float_to_int16_encode( sensor_data.weather.sky_temperature, -100, 50 );
+	compact_data->cloud_cover = float_to_int16_encode( sensor_data.weather.cloud_cover, -100, 50 );
 	compact_data->cloud_coverage = sensor_data.weather.cloud_coverage;
 
-	compact_data->msas = station.float_to_int16_encode( sensor_data.sqm.msas, 0, 30);
-	compact_data->nelm = station.float_to_int16_encode( sensor_data.sqm.nelm, -15, 10 );
+	compact_data->msas = float_to_int16_encode( sensor_data.sqm.msas, 0, 30);
+	compact_data->nelm = float_to_int16_encode( sensor_data.sqm.nelm, -15, 10 );
 
 	compact_data->db = sensor_data.db;
 
@@ -398,7 +418,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 {
 	if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
-		sensor_data.timestamp = station.get_timestamp();
+		time( &sensor_data.timestamp );
 
 		if ( config->get_has_device( aws_device_t:: BME_SENSOR ) )
 			read_BME();

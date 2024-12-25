@@ -56,7 +56,7 @@ void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_backlog( AsyncWebServerRequest *request )
 {
-	station.unselect_spi_devices();
+	UNSELECT_SPI_DEVICES();
 	
 	if ( !SD.begin( GPIO_SD_CS )) {
 
@@ -82,9 +82,9 @@ void AWSWebServer::get_backlog( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 {
-	if ( station.get_json_string_config().size() ) {
+	if ( station.get_config().get_json_string_config().size() ) {
 
-		request->send( 200, "application/json", station.get_json_string_config().data() );
+		request->send( 200, "application/json", station.get_config().get_json_string_config().data() );
 
 	} else
 
@@ -109,7 +109,7 @@ void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
 {
-	request->send( 200, "text/plain", station.get_root_ca().data() );
+	request->send( 200, "text/plain", station.get_config().get_root_ca().data() );
 }
 
 void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
@@ -141,7 +141,7 @@ void AWSWebServer::index( AsyncWebServerRequest *request )
 
 bool AWSWebServer::initialise( bool _debug_mode )
 {
-	int port = station.get_config_port();
+	int port = station.get_config().get_parameter<int>( "config_port" );
 
 	debug_mode = _debug_mode;
 	Serial.printf( "[WEBSERVER ] [INFO ] Server on port [%d].\n", port );
@@ -185,7 +185,7 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 
 void AWSWebServer::send_sdcard_file( AsyncWebServerRequest *request )
 {
-	station.unselect_spi_devices();
+	UNSELECT_SPI_DEVICES();
 	
 	if ( !SD.begin( GPIO_SD_CS )) {
 
@@ -245,7 +245,7 @@ void AWSWebServer::rm_file( AsyncWebServerRequest *request )
 
 void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVariant &json )
 {
-	if ( station.update_config( json ) ) {
+	if ( station.get_config().save_runtime_configuration( json )) {
 
 		request->send( 200, "text/plain", "OK\n" );
 		station.reboot();
