@@ -337,7 +337,7 @@ bool EcoStation::initialise( void )
 	}
 
 	Serial.printf( "\n\n[STATION   ] [INFO ] Firmware checksum = [%s]\n", station_data.firmware_sha56.data() );
-	Serial.printf( "[STATION   ] [INFO ] EcoStation [REV %s, BUILD %s] is booting...\n", REV.data(), BUILD_ID );
+	Serial.printf( "[STATION   ] [INFO ] EcoStation [REV %s, BUILD %s, BASE %s] is booting...\n", REV.data(), BUILD_ID, GITHASH );
 
 	station_data.reset_reason = esp_reset_reason();
 	compact_data.reset_reason = station_data.reset_reason;
