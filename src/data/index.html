@@ -103,8 +103,6 @@
 		@keyframes blink { 50% { opacity: 0; } }
 	</style>
 	<script src="/aws.js"></script>
-		<script src="file:///home/lesage/Arduino/EcoStation/data/aws.js"></script>
-
 </head>
 	
 <body onload="retrieve_data();">
@@ -183,13 +181,6 @@
 					<tr id="show_wifi_ap_password">
 						<td>AP Password</td>
 						<td><input form="config" id="wifi_ap_password" name="wifi_ap_password" type="text" value="" size="15"/></td>
-					</tr>
-					<tr id="show_wifi_ap_ip_mode">
-						<td>AP IP configuration</td>
-						<td>
-							<input form="config" id="wifi_ap_dhcp" name="wifi_ap_ip_mode" value="0" type="radio"  onchange="toggle_ap_ipgw(0);"/> DHCP
-							<input form="config" id="wifi_ap_fixed" name="wifi_ap_ip_mode" value="1" type="radio"  onchange="toggle_ap_ipgw(1);"/> Fixed
-						</td>
 					</tr>
 					<tr id="show_wifi_ap_ip">
 						<td>AP IP</td>

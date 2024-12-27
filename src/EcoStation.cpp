@@ -331,10 +331,9 @@ bool EcoStation::initialise( void )
 	esp_partition_get_sha256( esp_ota_get_running_partition(), sha_256.data() );
 	for ( uint8_t _byte : sha_256 ) {
 
-		etl::string<2> h;
-		snprintf( h.data(), 2, "%02x", _byte );
-		station_data.firmware_sha56 += h;
-
+		etl::string<3> h;
+		snprintf( h.data(), 3, "%02x", _byte );
+		station_data.firmware_sha56 += h.data();
 	}
 
 	Serial.printf( "\n\n[STATION   ] [INFO ] Firmware checksum = [%s]\n", station_data.firmware_sha56.data() );
@@ -606,6 +605,29 @@ void EcoStation::read_battery_level( void )
 	}
 }
 
+void EcoStation::read_sensors( void )
+{
+	sensor_manager.read_sensors();
+
+	if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
+
+		etl::string<64> string;
+		snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", station_data.health.battery_level );
+
+		// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
+		if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
+			send_alarm( "Low battery", string.data() );
+
+		low_battery_event_count++;
+		Serial.printf( "[CORE      ] [INFO ] %s", string.data() );
+	}
+}
+
+void EcoStation::reboot( void )
+{
+	ESP.restart();
+}
+
 int EcoStation::reformat_ca_root_line( std::array<char, 116> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
 {
 	int string_pos;
@@ -628,29 +650,6 @@ int EcoStation::reformat_ca_root_line( std::array<char, 116> &string, int str_le
 	memset( string.data() + 112, 0, 3 );
 	strlcat( string.data(), " #\n", string.size() );
 	return ca_pos;
-}
-
-void EcoStation::read_sensors( void )
-{
-	sensor_manager.read_sensors();
-
-	if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
-
-		etl::string<64> string;
-		snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", station_data.health.battery_level );
-
-		// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
-		if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
-			send_alarm( "Low battery", string.data() );
-
-		low_battery_event_count++;
-		Serial.printf( "[CORE      ] [INFO ] %s", string.data() );
-	}
-}
-
-void EcoStation::reboot( void )
-{
-	ESP.restart();
 }
 
 void EcoStation::report_unavailable_sensors( void )

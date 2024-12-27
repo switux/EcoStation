@@ -34,13 +34,23 @@ extern EcoStation station;
 RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 
 template <size_t N>
-etl::string<N * 2> AWSConfig::bytes_to_hex_string(const uint8_t* bytes, size_t length) const {
+etl::string<N * 2> AWSConfig::bytes_to_hex_string( const uint8_t* bytes, size_t length, bool reverse ) const
+{
     etl::string<N * 2> hex_str;
-    for (size_t i = 0; i < length; ++i) {
-		uint8_t byte = bytes[i];
-        hex_str.push_back(nibble_to_hex_char((byte >> 4) & 0x0F));
-        hex_str.push_back(nibble_to_hex_char(byte & 0x0F));
-	}
+
+	if ( reverse )
+		for ( int i = length - 1; i >= 0; i-- ) {
+			uint8_t byte = bytes[ i ];
+			hex_str.push_back( nibble_to_hex_char( ( byte >> 4 ) & 0x0F ));
+			hex_str.push_back( nibble_to_hex_char( byte & 0x0F ));
+		}
+	else
+	    for ( int i = 0; i < length; ++i ) {
+			uint8_t byte = bytes[ i ];
+			hex_str.push_back( nibble_to_hex_char( ( byte >> 4 ) & 0x0F ));
+			hex_str.push_back( nibble_to_hex_char( byte & 0x0F ));
+		}
+	
     return hex_str;
 }
 
@@ -111,7 +121,7 @@ std::array<uint8_t,16> AWSConfig::get_lora_appkey( void )
 
 etl::string_view AWSConfig::get_lora_appkey_str( void )
 {
-	auto hex_string	= bytes_to_hex_string<16>( lora_appkey.data(), 16 );
+	auto hex_string	= bytes_to_hex_string<16>( lora_appkey.data(), 16, false );
 	return hex_string;
 }
 
@@ -122,7 +132,7 @@ std::array<uint8_t,8> AWSConfig::get_lora_deveui( void )
 
 etl::string_view AWSConfig::get_lora_deveui_str( void )
 {
-	auto hex_string	= bytes_to_hex_string<8>( lora_eui.data(), 8 );
+	auto hex_string	= bytes_to_hex_string<8>( lora_eui.data(), 8, true );
 	return hex_string;
 }
 

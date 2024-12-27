@@ -31,6 +31,7 @@ const	PANELS = [ 'general', 'network', 'sensors', 'dashboard' ];
 const	SENSORS = [ 'bme', 'tsl', 'mlx', 'spl' ];
 const	WIFI_PARAMETERS = [ 'wifi_mode', 'wifi_sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'wifi_ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
 const	CLOUD_COVERAGE = [ 'Clear', 'Cloudy', 'Overcast' ];
+const	WIFI_MODE = [ 'Client', 'AP', 'Both' ];
 
 let sleepSetTimeout_ctrl;
 
@@ -83,7 +84,7 @@ function fill_cloud_coverage_parameter_values( values )
 
 function fill_network_values( values )
 {
-	switch( values['wifi_mode'] ) {
+	switch( WIFI_MODE[ values['wifi_mode'] ] ) {
 		case 'AP':
 			document.getElementById("AP").checked = true;
 			break;
@@ -104,19 +105,7 @@ function fill_network_values( values )
 	if ( x !== null )
 		x.checked = true;
 
-	toggle_sta_ipgw(  values['show_wifi_sta_ip_mode'] );
-	switch( values['wifi_mode'] ) {
-		case 0:
-			document.getElementById("AP").checked = true;
-			break;
-		case 1:
-			document.getElementById("Client").checked = true;
-			break;
-		case 2:
-			document.getElementById("Both").checked = true;
-			break;
-	}
-
+	toggle_sta_ipgw( values['show_wifi_sta_ip_mode'] );
 }
 
 function fill_sensor_values( values )
@@ -193,6 +182,7 @@ function retrieve_data()
 			fill_network_values( values );
 			fill_sensor_values( values );
 			fill_cloud_coverage_parameter_values( values );
+			toggle_wifi_mode( values['wifi_mode'] );
 
 		}
 	};
@@ -277,7 +267,6 @@ function toggle_wifi_mode( wifi_mode )
 		case 0:
 			document.getElementById("show_wifi_ap_ssid").style.display = "none";
 			document.getElementById("show_wifi_ap_password").style.display = "none";
-			document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
 			document.getElementById("show_wifi_ap_ip").style.display = "none";
 			document.getElementById("show_wifi_ap_gw").style.display = "none";
 			document.getElementById("show_wifi_ap_dns").style.display = "none";
@@ -295,6 +284,7 @@ function toggle_wifi_mode( wifi_mode )
 			document.getElementById("show_wifi_sta_ip").style.display = "none";
 			document.getElementById("show_wifi_sta_gw").style.display = "none";
 			document.getElementById("show_wifi_sta_dns").style.display = "none";
+			document.getElementById("show_wifi_ap_ssid").style.display = "table-row";
 			document.getElementById("show_wifi_ap_password").style.display = "table-row";
 			document.getElementById("show_wifi_ap_ip").style.display = "table-row";
 			document.getElementById("show_wifi_ap_gw").style.display = "table-row";
