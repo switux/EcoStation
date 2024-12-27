@@ -122,8 +122,9 @@ class AWSConfig {
 		etl::string<8>			pcb_version;
 		aws_pwr_src				pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>		root_ca;
+
 		template<size_t N>
-		etl::string<N*2>	bytes_to_hex_string( const uint8_t *, size_t  ) const;
+		etl::string<N*2>	bytes_to_hex_string( const uint8_t *, size_t, bool  ) const;
 		template <typename T>
 		T 					get_aag_parameter( const char * );
 		void				list_files( void );

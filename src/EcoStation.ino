@@ -24,7 +24,7 @@
 #include "EcoStation.h"
 
 const etl::string<12>		REV					= "1.0.0";
-const unsigned long			US_SLEEP			= 10 * 60 * 1000000;				// 15 minutes
+const unsigned long			US_SLEEP			= 15 * 60 * 1000000;				// 15 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 EcoStation station;
@@ -50,7 +50,6 @@ void setup()
 		station.prepare_for_deep_sleep( static_cast<int>( US_SLEEP / 1000000 ) );
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
 		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF );
-//		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF );
 		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON );
 		esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
 
