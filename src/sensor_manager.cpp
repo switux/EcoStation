@@ -445,6 +445,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 
 		xSemaphoreGive( i2c_mutex );
 
+		sensor_data.available_sensors = available_sensors;
 	}
 }
 
