@@ -131,7 +131,7 @@ class AWSConfig {
 		char				nibble_to_hex_char(uint8_t) const;
 		bool				read_config( etl::string<64> & );
 		bool				read_file( const char * );
-		bool				read_hw_info_from_nvs( etl::string<64> & );
+		bool				read_eeprom_and_nvs_config( etl::string<64> & );
 		void				read_root_ca( void );
 		void				set_missing_network_parameters_to_default_values( void );
 		void				set_missing_parameters_to_default_values( void );

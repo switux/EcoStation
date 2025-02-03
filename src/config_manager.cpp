@@ -178,7 +178,7 @@ char AWSConfig::nibble_to_hex_char(uint8_t nibble) const {
 
 bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 {
-	read_hw_info_from_nvs( firmware_sha256 );
+	read_eeprom_and_nvs_config( firmware_sha256 );
 
 	read_root_ca();
 
@@ -205,6 +205,78 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 	json_config["has_lorawan"]= ( ( devices & aws_device_t::LORAWAN_DEVICE ) == aws_device_t::LORAWAN_DEVICE );
 	json_config["has_sdcard"]= ( ( devices & aws_device_t::SDCARD_DEVICE ) == aws_device_t::SDCARD_DEVICE );
 
+	return true;
+}
+
+bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
+{
+	Preferences nvs;
+	char		x;
+
+	Serial.printf( "[CONFIGMNGR] [INFO ] Reading NVS.\n" );
+
+	nvs.begin( "firmware", false );
+		
+	if ( !nvs.getString( "sha256", ota_sha256.data(), ota_sha256.capacity() ))
+		nvs.putString( "sha256", firmware_sha56.data() );
+
+	nvs.end();
+
+	AT24C eeprom;
+
+	nvs.begin( "aws", true );
+	if ( !nvs.getString( "pcb_version", pcb_version.data(), pcb_version.capacity() )) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get PCB version from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+
+	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get Power Mode from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+
+	if ( ( x = nvs.getChar( "has_rtc", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get RTC presence from NVS. Please contact support.\n" );
+
+	}
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::RTC_DEVICE;
+
+	if ( ( x = nvs.getChar( "has_sdcard", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get SDCARD presence from NVS. Please contact support.\n" );
+
+	}
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SDCARD_DEVICE;
+
+	if ( ( x = nvs.getChar( "has_lorawan", 127 )) == 127 ) {
+
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN presence from NVS. Please contact support.\n" );
+	}
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LORAWAN_DEVICE;
+
+	if ( x ) {
+
+		if ( !nvs.getBytes( "lorawan_deveui", lora_eui.data(), 8 )) {
+
+			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN DEVEUI from NVS. Please contact support.\n" );
+			nvs.end();
+			return false;
+		}
+
+		if ( !nvs.getBytes( "lorawan_appkey", lora_appkey.data(), 16 )) {
+
+			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN APPKEY from NVS. Please contact support.\n" );
+			nvs.end();
+			return false;
+		}
+
+	}
+	nvs.end();
 	return true;
 }
 
@@ -285,76 +357,6 @@ bool AWSConfig::read_file( const char *filename )
 
 	Serial.printf( "[CONFIGMNGR] [ERROR] Configuration file has been corrupted.\n");
 	return false;
-}
-
-bool AWSConfig::read_hw_info_from_nvs( etl::string<64> &firmware_sha56 )
-{
-	Preferences nvs;
-	char		x;
-
-	Serial.printf( "[CONFIGMNGR] [INFO ] Reading NVS values.\n" );
-
-	nvs.begin( "firmware", false );
-		
-	if ( !nvs.getString( "sha256", ota_sha256.data(), ota_sha256.capacity() ))
-		nvs.putString( "sha256", firmware_sha56.data() );
-
-	nvs.end();
-
-	nvs.begin( "aws", true );
-	if ( !nvs.getString( "pcb_version", pcb_version.data(), pcb_version.capacity() )) {
-
-		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get PCB version from NVS. Please contact support.\n" );
-		nvs.end();
-		return false;
-	}
-
-	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
-
-		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get Power Mode from NVS. Please contact support.\n" );
-		nvs.end();
-		return false;
-	}
-
-	if ( ( x = nvs.getChar( "has_rtc", 127 )) == 127 ) {
-
-		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get RTC presence from NVS. Please contact support.\n" );
-
-	}
-	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::RTC_DEVICE;
-
-	if ( ( x = nvs.getChar( "has_sdcard", 127 )) == 127 ) {
-
-		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get SDCARD presence from NVS. Please contact support.\n" );
-
-	}
-	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SDCARD_DEVICE;
-
-	if ( ( x = nvs.getChar( "has_lorawan", 127 )) == 127 ) {
-
-		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN presence from NVS. Please contact support.\n" );
-	}
-	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::LORAWAN_DEVICE;
-
-	if ( x ) {
-
-		if ( !nvs.getBytes( "lorawan_deveui", lora_eui.data(), 8 )) {
-
-			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN DEVEUI from NVS. Please contact support.\n" );
-			nvs.end();
-			return false;
-		}
-
-		if ( !nvs.getBytes( "lorawan_appkey", lora_appkey.data(), 16 )) {
-
-			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN APPKEY from NVS. Please contact support.\n" );
-			nvs.end();
-			return false;
-		}
-
-	}
-	nvs.end();
-	return true;
 }
 
 bool AWSConfig::rollback()
