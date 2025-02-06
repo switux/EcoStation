@@ -46,7 +46,7 @@ bool AT24C::read_buffer( uint16_t data_addr, uint8_t *data, uint8_t len )
 
 		uint8_t offset		= data_addr % max_page_size;
 		uint8_t used		= max_page_size - offset;
-		uint8_t to_read		= ( used < ( len - to_read )) ? used : len - to_read;
+		uint8_t to_read		= ( used < ( len - bytes_read )) ? used : len - bytes_read;
 
 		if ( !read_page( data_addr, data + bytes_read, to_read ))
 			return false;
