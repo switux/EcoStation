@@ -45,7 +45,7 @@
 #include "config_server.h"
 #include "AWSNetwork.h"
 #include "EcoStation.h"
-
+//#include "manifest.h"
 
 extern SemaphoreHandle_t	sensors_read_mutex;
 
@@ -123,7 +123,7 @@ void EcoStation::display_banner()
 
 	uint8_t	*wifi_mac	= network.get_wifi_mac();
 	int		i;
-	    
+
 	Serial.printf( "\n[STATION   ] [INFO ] #############################################################################################\n" );
 	Serial.printf( "[STATION   ] [INFO ] # EcoStation                                                                                #\n" );
 	Serial.printf( "[STATION   ] [INFO ] #  (c) lesage@loads.ch                                                                      #\n" );
@@ -157,6 +157,13 @@ void EcoStation::display_banner()
 	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
 	print_runtime_config();
+
+//	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+//	Serial.printf( "[STATION   ] [INFO ] # LIBRARIES                                                                                 #\n" );
+//	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+
+//	for( i = 0; i < NBLIB; i++ )
+//		print_config_string( "# %35s : %s", libraries[i].data(), libversions[i].data() );
 
 	Serial.printf( "[STATION   ] [INFO ] #############################################################################################\n" );
 }

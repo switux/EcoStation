@@ -113,6 +113,7 @@ class AWSConfig {
 		const size_t			MAX_CONFIG_FILE_SIZE	= 2048;
 		bool					debug_mode				= false;
 		aws_device_t			devices					= aws_device_t::NO_SENSOR;
+        static const uint32_t	EEPROM_MAGIC			= 0xDEADBEEF;
 		uint32_t				fs_free_space			= 0;
 		bool					initialised				= false;
 		JsonDocument			json_config;
@@ -125,6 +126,7 @@ class AWSConfig {
 
 		template<size_t N>
 		etl::string<N*2>	bytes_to_hex_string( const uint8_t *, size_t, bool  ) const;
+		uint8_t				char2int( char );
 		template <typename T>
 		T 					get_aag_parameter( const char * );
 		void				list_files( void );
@@ -136,6 +138,7 @@ class AWSConfig {
 		void				set_missing_network_parameters_to_default_values( void );
 		void				set_missing_parameters_to_default_values( void );
 		void				set_root_ca( JsonVariant & );
+		void				to_hex_array( const char*, uint8_t * );
 		void				update_fs_free_space( void );
 		bool				verify_entries( JsonVariant & );
 };
@@ -182,7 +185,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "cloud_coverage_formula" ):
 		case str2int( "config_iface" ):
 		case str2int( "config_port" ):
-			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );	// NOSONAR
+			return ( json_config[key].is<JsonVariant>() ? json_config[key].as<T>() : 0 );	// NOSONAR
 
 		case str2int( "automatic_updates" ):
 		case str2int( "data_push" ):

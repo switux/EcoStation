@@ -21,26 +21,68 @@
 #ifndef _ATC24C_h
 #define _ATC24C_h
 
+#include "Wire.h"
+
 class AT24C {
 
 	private:
 
-		uint8_t			eeprom_address	= 0x50;
+		uint8_t			eeprom_address;
+		uint8_t			error			= 0;
 		const uint16_t	max_page_size	= 32;
 
 	public:
 
-			AT24C( void ) = default;
+			AT24C( void );
 			AT24C( uint8_t );
-			
-		bool read_buffer( uint16_t, uint8_t *, uint8_t );
-		bool read_byte( uint16_t, uint8_t * );
-		bool read_page( uint16_t, uint8_t *, uint8_t );
-		bool write_buffer( uint16_t, const uint8_t *, uint8_t );
-		bool write_byte( uint16_t, uint8_t );
-		bool write_page( uint16_t, const uint8_t *, uint8_t );
 
+		uint8_t	get_error( void );
+		template <typename T>
+		bool	read( uint16_t, T * );
+		bool	read_buffer( uint16_t, uint8_t *, uint8_t );
+		bool	read_page( uint16_t, uint8_t *, uint8_t );
+		template <typename T>
+		bool	write( uint16_t, T * );
+		bool	write_buffer( uint16_t, const uint8_t *, uint8_t );
+		bool	write_page( uint16_t, const uint8_t *, uint8_t );
 
 };
+
+template <typename T>
+bool AT24C::read( uint16_t data_addr, T *data )
+{
+	constexpr size_t	size = sizeof( T );
+	uint8_t				buffer[ size ];
+
+	Wire.beginTransmission( eeprom_address );
+	Wire.write( ( data_addr >> 8 ) & 0xFF );
+	Wire.write( data_addr & 0xFF );
+
+	delay( 10 );
+
+	if ( ( error = Wire.endTransmission() ) != 0 )
+		return false;
+
+	if ( Wire.requestFrom( eeprom_address, size ) != size )
+		return false;
+
+	for ( size_t i = 0; ( i < size ) && Wire.available(); i++ )
+		buffer[ i ] = Wire.read();
+
+	memcpy( data, buffer, size );
+
+	return true;
+}
+
+template <typename T>
+bool AT24C::write( uint16_t data_addr, T *data )
+{
+	constexpr size_t	size = sizeof( T );
+	uint8_t				buffer[ size ];
+
+	memcpy( buffer, &data, size );
+
+	return write_buffer( data_addr, buffer, size );
+}
 
 #endif
