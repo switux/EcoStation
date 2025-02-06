@@ -36,7 +36,7 @@ void setup()
 
 	Serial.begin( 115200 );
 	delay( 500 );
-	        
+
 	if ( !station.initialise()) {
 		
 		Serial.printf( "[CORE      ] [PANIC] ===> EcoStation did not properly initialise. Stopping here! <===\n" );

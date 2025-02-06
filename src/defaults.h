@@ -26,6 +26,8 @@
 
 const etl::string<128>	DEFAULT_LOCATION					= "Somewhere on Earth";
 
+const uint8_t			AT24C_ADDRESS						= 0x50;
+
 const uint32_t			DEFAULT_SENSOR_POLLING_MS_INTERVAL	= 15000;
 
 static const uint8_t DEFAULT_AUTOMATIC_UPDATES		= 1;
