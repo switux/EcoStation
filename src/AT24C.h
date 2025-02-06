@@ -22,6 +22,7 @@
 #define _ATC24C_h
 
 #include "Wire.h"
+#include <array>
 
 class AT24C {
 
@@ -33,8 +34,8 @@ class AT24C {
 
 	public:
 
-			AT24C( void );
-			AT24C( uint8_t );
+					AT24C( void );
+		explicit	AT24C( uint8_t );
 
 		uint8_t	get_error( void );
 		template <typename T>
@@ -51,8 +52,8 @@ class AT24C {
 template <typename T>
 bool AT24C::read( uint16_t data_addr, T *data )
 {
-	constexpr size_t	size = sizeof( T );
-	uint8_t				buffer[ size ];
+	constexpr size_t			size = sizeof( T );
+	std::array<uint8_t,size>	buffer;
 
 	Wire.beginTransmission( eeprom_address );
 	Wire.write( ( data_addr >> 8 ) & 0xFF );
@@ -69,7 +70,7 @@ bool AT24C::read( uint16_t data_addr, T *data )
 	for ( size_t i = 0; ( i < size ) && Wire.available(); i++ )
 		buffer[ i ] = Wire.read();
 
-	memcpy( data, buffer, size );
+	memcpy( data, buffer.data(), size );
 
 	return true;
 }
@@ -77,12 +78,12 @@ bool AT24C::read( uint16_t data_addr, T *data )
 template <typename T>
 bool AT24C::write( uint16_t data_addr, T *data )
 {
-	constexpr size_t	size = sizeof( T );
-	uint8_t				buffer[ size ];
+	constexpr size_t			size = sizeof( T );
+	std::array<uint8_t,size>	buffer;
 
-	memcpy( buffer, &data, size );
+	memcpy( buffer.data(), &data, size );
 
-	return write_buffer( data_addr, buffer, size );
+	return write_buffer( data_addr, buffer.data(), size );
 }
 
 #endif

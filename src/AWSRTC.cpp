@@ -65,7 +65,7 @@ void AWSRTC::get_datetime( struct tm *utc_time )
 	Wire.beginTransmission( DS3231_I2C_ADDRESS );
 	Wire.write( 0 );
 	Wire.endTransmission();
-	Wire.requestFrom( DS3231_I2C_ADDRESS, 7 );
+	Wire.requestFrom( DS3231_I2C_ADDRESS, static_cast<uint8_t>(7) );
 	utc_time->tm_sec = bcd_to_decimal( Wire.read() & 0x7F );
 	utc_time->tm_min = bcd_to_decimal( Wire.read() );
 	utc_time->tm_hour = bcd_to_decimal( Wire.read() & 0x3F );

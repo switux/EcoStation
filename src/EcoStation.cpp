@@ -349,8 +349,17 @@ bool EcoStation::initialise( void )
 	station_data.reset_reason = esp_reset_reason();
 	compact_data.reset_reason = station_data.reset_reason;
 
+	if ( solar_panel ) {
+
+		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
+		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
+	}
+
 	if ( !config.load( station_data.firmware_sha56, debug_mode ) )
-		return false;
+			return false;
+
+	if ( solar_panel )
+		digitalWrite( GPIO_ENABLE_3_3V, LOW );
 
 	station_data.health.fs_free_space = config.get_fs_free_space();
 	compact_data.fs_free_space = station_data.health.fs_free_space;
@@ -385,7 +394,7 @@ bool EcoStation::initialise( void )
 	network.initialise( &config, debug_mode );
 
 	if ( solar_panel ) {
-		
+
 		// Issue #143
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
