@@ -68,6 +68,11 @@ EcoStation::EcoStation( void )
 	station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 	location = DEFAULT_LOCATION;
 	compact_data.format_version = COMPACT_DATA_FORMAT_VERSION;
+	compact_data.build_info =  (( BUILD_ID[0] - '0' ) * 1000000000 ) + (( BUILD_ID[1] - '0') * 100000000) +\
+							(( BUILD_ID[2] - '0') * 10000000) + (( BUILD_ID[3] - '0') * 1000000 ) +\
+							(( BUILD_ID[4] - '0') * 100000 ) + (( BUILD_ID[5] - '0') * 10000 ) +\
+							(( BUILD_ID[6] - '0') * 1000 ) + (( BUILD_ID[7] - '0') * 100 ) +\
+							(( BUILD_ID[9] - '0') * 10 ) + (( BUILD_ID[10] - '0'));
 }
 
 bool EcoStation::activate_sensors( void )
