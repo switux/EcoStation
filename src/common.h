@@ -31,7 +31,7 @@
 // Force DEBUG output even if not activated by external button
 const uint8_t DEBUG_MODE = 1;
 
-const uint8_t COMPACT_DATA_FORMAT_VERSION = 0x01;
+const uint8_t COMPACT_DATA_FORMAT_VERSION = 0x02;
 
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
@@ -162,6 +162,7 @@ struct compact_data_t {
 	uint32_t		fs_free_space;
 
 	int				reset_reason;
+	uint32_t		build_info;
 } __attribute__ ((packed));
 
 void loop( void );
