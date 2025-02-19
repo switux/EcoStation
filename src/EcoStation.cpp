@@ -72,7 +72,7 @@ EcoStation::EcoStation( void )
 							(( BUILD_ID[2] - '0') * 10000000) + (( BUILD_ID[3] - '0') * 1000000 ) +\
 							(( BUILD_ID[4] - '0') * 100000 ) + (( BUILD_ID[5] - '0') * 10000 ) +\
 							(( BUILD_ID[6] - '0') * 1000 ) + (( BUILD_ID[7] - '0') * 100 ) +\
-							(( BUILD_ID[9] - '0') * 10 ) + (( BUILD_ID[10] - '0'));
+							(( BUILD_ID[10] - '0') * 10 ) + (( BUILD_ID[11] - '0'));
 }
 
 bool EcoStation::activate_sensors( void )
