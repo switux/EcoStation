@@ -21,9 +21,9 @@ ESP32 based station for urban ecology using LoRaWAN to transmit data.
   - ESP32Time (2.0.6)
   - ESPAsyncWebServer (3.1.0)
   - ESPping (1.0.4)
-  - MCCI_LoRaWAN_LMIC_library (1.0.4)
+  - MCCI_LoRaWAN_LMIC_library (5.0.1)
   - SD (1.3.0)
-  - SSLClient (1.3.0)
+  - SSLClient (1.6.11)
 
 ## BUILD INSTRUCTIONS
 
