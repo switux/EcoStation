@@ -100,6 +100,8 @@ class AWSConfig {
 		etl::string_view		get_lora_deveui_str( void );
 		etl::string_view		get_ota_sha256( void );
 		etl::string_view		get_pcb_version( void );
+		etl::string_view		get_product( void );
+		etl::string_view		get_product_version( void );
 		aws_pwr_src				get_pwr_mode( void );
 		etl::string_view		get_root_ca( void );
 		bool 					load( etl::string<64> &, bool );
@@ -121,6 +123,8 @@ class AWSConfig {
 		std::array<uint8_t,16>	lora_appkey;
 		std::array<uint8_t,8>	lora_eui;
 		etl::string<8>			pcb_version;
+		etl::string<8>			product;
+		etl::string<8>			product_version;
 		aws_pwr_src				pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>		root_ca;
 

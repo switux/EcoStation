@@ -73,6 +73,7 @@ EcoStation::EcoStation( void )
 							(( BUILD_ID[4] - '0') * 100000 ) + (( BUILD_ID[5] - '0') * 10000 ) +\
 							(( BUILD_ID[6] - '0') * 1000 ) + (( BUILD_ID[7] - '0') * 100 ) +\
 							(( BUILD_ID[10] - '0') * 10 ) + (( BUILD_ID[11] - '0'));
+	compact_data.sleep_minutes = static_cast<int>( ( US_SLEEP / 1000000 ) / 60 );
 }
 
 bool EcoStation::activate_sensors( void )
@@ -329,6 +330,7 @@ uint32_t EcoStation::get_uptime( void )
 
   		compact_data.uptime = station_data.health.uptime;
   	}
+
 	return station_data.health.uptime;
 }
 
@@ -385,7 +387,13 @@ bool EcoStation::initialise( void )
 
 	ota_setup.config = PWR_MODE_STR[ static_cast<int>( config.get_pwr_mode()) ];
 	ota_setup.config += "_";
-	ota_setup.config += config.get_pcb_version().data();
+	if ( strlen( config.get_product().data())) {
+
+		ota_setup.config += config.get_product().data();
+		ota_setup.config += config.get_product_version().data();
+
+	} else
+		ota_setup.config += config.get_pcb_version().data();
 
 	ota_setup.version = REV;
 	ota_setup.version += ".";

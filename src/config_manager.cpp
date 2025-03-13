@@ -101,6 +101,16 @@ etl::string_view AWSConfig::get_pcb_version( void )
   return etl::string_view( pcb_version );
 }
 
+etl::string_view AWSConfig::get_product( void )
+{
+  return etl::string_view( product );
+}
+
+etl::string_view AWSConfig::get_product_version( void )
+{
+  return etl::string_view( product_version );
+}
+
 aws_pwr_src	AWSConfig::get_pwr_mode( void )
 {
   return pwr_mode;
@@ -283,11 +293,22 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
     Serial.printf( "[CONFIGMNGR] [INFO ] Reading NVS.\n" );
 
     nvs.begin( "aws", true );
-    if ( !nvs.getString( "pcb_version", pcb_version.data(), pcb_version.capacity() )) {
+	if ( !nvs.getString( "pcb_version", pcb_version.data(), pcb_version.capacity() )) {
 
-      Serial.printf( "[CONFIGMNGR] [PANIC] Could not get PCB version from NVS. Please contact support.\n" );
-      nvs.end();
-      return false;
+		if ( !nvs.getString( "product", product.data(), product.capacity() )) {
+
+			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get product or PCB version from NVS. Please contact support.\n" );
+			nvs.end();
+			return false;
+		}
+
+		if ( !nvs.getString( "product_version", product_version.data(), product_version.capacity() )) {
+
+			Serial.printf( "[CONFIGMNGR] [PANIC] Could not get product version from NVS. Please contact support.\n" );
+			nvs.end();
+			return false;
+		}
+
     }
 
     if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
