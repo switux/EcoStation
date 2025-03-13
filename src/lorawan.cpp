@@ -20,9 +20,6 @@
 #include "gpio_config.h"
 #include "lorawan.h"
 #include "common.h"
-#include "EcoStation.h"
-
-extern EcoStation	station;
 
 const lmic_pinmap lmic_pins = {
 	.nss	= GPIO_LORA_CS,
@@ -73,11 +70,11 @@ bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> app
 		LMIC_setLinkCheckMode( 0 );
 		LMIC.dn2Dr = DR_SF9;
 		LMIC_setDrTxpow( DR_SF12, 14 );
-		Serial.printf( "[LORAWAN   ] [INFO ] Need to rejoin.\n" );
+		Serial.printf( "[LORAWAN   ] [INFO ] Need to rejoin network.\n" );
 
 	} else {
 
-		Serial.printf( "[LORAWAN   ] [INFO ] No need to rejoin.\n" );
+		Serial.printf( "[LORAWAN   ] [INFO ] Already joined with addr 0x04lx.\n", LMIC.devaddr );
 		LMIC_setLinkCheckMode( 1 );
 	}
 	return true;
@@ -110,7 +107,7 @@ bool AWSLoraWAN::join( void )
 
 	unsigned long	start = millis();
 
-	while ( (!( joined = check_joined() )) && ( ( millis() - start ) < 20000 )) { /* wait 20s before giving up */ };
+	while ( (!( joined = check_joined() )) && ( ( millis() - start ) < (5*60*1000) )) { /* wait 20s before giving up */ };
 	if ( !joined )
 		Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network\n" );
 	else
