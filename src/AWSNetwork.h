@@ -56,9 +56,12 @@ class AWSNetwork {
 		void		initialise( AWSConfig *, bool );
 		bool		initialise_wifi( void );
 		bool		is_wifi_connected( void );
+		void		LoRaWAN_message_sent( void );
+		void		LoRaWAN_process_downlink( void );
 		bool		post_content( const char *, size_t, const char * );
 		void		prepare_for_deep_sleep( int );
 		void		send_raw_data( uint8_t *, uint8_t );
+		void		set_LoRaWAN_joined( bool );
 		bool		start_hotspot( void );
 
 };
