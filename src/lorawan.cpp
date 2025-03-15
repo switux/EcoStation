@@ -20,6 +20,9 @@
 #include "gpio_config.h"
 #include "lorawan.h"
 #include "common.h"
+#include "EcoStation.h"
+
+extern EcoStation station;
 
 const lmic_pinmap lmic_pins = {
 	.nss	= GPIO_LORA_CS,
@@ -55,43 +58,28 @@ bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> app
 	os_init();
 	LMIC_reset();
 	restore_after_deep_sleep();
+	
+	if ( !joined )
 
-	if ( !joined ) {
-
-		LMIC_setupChannel( 0, 868100000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 1, 868300000, DR_RANGE_MAP( DR_SF12, DR_SF7B ), BAND_CENTI );
-		LMIC_setupChannel( 2, 868500000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 3, 867100000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 4, 867300000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 5, 867500000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 6, 867700000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 7, 867900000, DR_RANGE_MAP( DR_SF12, DR_SF7 ),  BAND_CENTI );
-		LMIC_setupChannel( 8, 868800000, DR_RANGE_MAP( DR_FSK,  DR_FSK ),  BAND_MILLI );
-		LMIC_setLinkCheckMode( 0 );
-		LMIC.dn2Dr = DR_SF9;
-		LMIC_setDrTxpow( DR_SF12, 14 );
 		Serial.printf( "[LORAWAN   ] [INFO ] Need to rejoin network.\n" );
 
-	} else {
+	else {
 
-		Serial.printf( "[LORAWAN   ] [INFO ] Already joined with addr 0x04lx.\n", LMIC.devaddr );
+		Serial.printf( "[LORAWAN   ] [INFO ] Already joined with addr 0x%04lx.\n", LMIC.devaddr );
 		LMIC_setLinkCheckMode( 1 );
 	}
+
+	std::function<void(void *)> _loop = std::bind( &AWSLoraWAN::loop, this, std::placeholders::_1 );
+
+	if ( xTaskCreatePinnedToCore(
+		[](void *param) {	// NOSONAR
+			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
+			(*periodic_tasks_proxy)( NULL );
+		}, "LORALOOP Task", 5000, &_loop, 5, &loop_handle, 1 ) != pdPASS )
+		
+		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" ); 
+
 	return true;
-}
-
-bool AWSLoraWAN::check_joined( void )
-{
-	os_runloop_once();
-
-	if (( LMIC.devaddr != 0  ) && (( LMIC.opmode & OP_JOINING ) == 0 )) {
-
-		Serial.printf( "[LORAWAN   ] [INFO ] Joined LoRaWAN network with devaddr 0x%04lX\n", LMIC.devaddr );
-		LMIC_setLinkCheckMode( 1 );
-
-		return true;
-	}
-	return false;
 }
 
 bool AWSLoraWAN::join( void )
@@ -107,11 +95,17 @@ bool AWSLoraWAN::join( void )
 
 	unsigned long	start = millis();
 
-	while ( (!( joined = check_joined() )) && ( ( millis() - start ) < (5*60*1000) )) { /* wait 20s before giving up */ };
+	while (( !joined ) && ( ( millis() - start ) < (5*60*1000) )) { /* wait 20s before giving up */ };
+
 	if ( !joined )
+
 		Serial.printf( "[LORAWAN   ] [ERROR] Could not join the network\n" );
-	else
+
+	else {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] Already joined with addr 0x04lx.\n", LMIC.devaddr );
 		LMIC_setLinkCheckMode( 1 );
+	}
 
 	return joined;
 }
@@ -120,7 +114,21 @@ bool AWSLoraWAN::has_joined( void )
 {
 	return joined;
 }
- 
+
+void AWSLoraWAN::loop( void *dummy )
+{
+	while( 1 ) {
+
+		delay( 1 );
+		os_runloop_once();
+	}
+}
+
+void AWSLoraWAN::message_sent( void )
+{
+	_message_sent = true;
+}
+
 void AWSLoraWAN::prepare_for_deep_sleep( int deep_sleep_time_secs )
 {
 	RTC_LMIC = LMIC;
@@ -142,6 +150,15 @@ void AWSLoraWAN::prepare_for_deep_sleep( int deep_sleep_time_secs )
 	RTC_LMIC.globalDutyAvail = RTC_LMIC.globalDutyAvail - ( (( now / 1000.0 ) + deep_sleep_time_secs) * OSTICKS_PER_SEC );
 	if (RTC_LMIC.globalDutyAvail < 0)
 		RTC_LMIC.globalDutyAvail = 0;
+
+}
+
+void AWSLoraWAN::process_downlink( void )
+{
+	Serial.printf( "[LORAWAN   ] [DEBUG] Downlink payload: [" );
+	for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+		Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+	Serial.printf( "]\n" );
 }
 
 void AWSLoraWAN::restore_after_deep_sleep( void )
@@ -150,19 +167,12 @@ void AWSLoraWAN::restore_after_deep_sleep( void )
 		return;
 
 	LMIC = RTC_LMIC;
+	LMIC.opmode = 0x800;
 	joined = true;
 }
 
 void AWSLoraWAN::send( osjob_t *job )
 {
-	if ( LMIC.opmode & OP_TXRXPEND ) {
-
-		if ( debug_mode )
-			Serial.print( "[LORAWAN   ] [DEBUG] RX/TX pending, not sending packet\n" );
-		return;
-	}
-
-	LMIC_setTxData2( 1, mydata.data(), mylen, 0 );
 	if ( debug_mode ) {
 
 		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", mylen );
@@ -171,46 +181,11 @@ void AWSLoraWAN::send( osjob_t *job )
 		Serial.printf( "]\n" );
 	}
 
-	unsigned long	start			= millis();
-	bool			message_sent	= false;
-	bool			msg_recv		= false;
+	_message_sent = false;
+	LMIC_setTxData2( 1, mydata.data(), mylen, 0 );
 
-	while (( millis() - start ) < 5000 ) {
-
-		os_runloop_once();
-
-		if ( !message_sent && !( LMIC.opmode & OP_TXRXPEND ))  {
-			message_sent = true;
-			Serial.println("[LORAWAN   ] [DEBUG] Transmission completed.");
-		}
-
-		if ( ( LMIC.txrxFlags & ( TXRX_DNW1 | TXRX_DNW2 )) && ( LMIC.dataLen > 0 ) ) {
-
-			Serial.printf( "[LORAWAN   ] [DEBUG] Downlink payload: [" );
-			for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
-				Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
-			Serial.printf( "]\n" );
-			uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
-			Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
-
-		}
-
-		if (( LMIC.txrxFlags & TXRX_NOPORT ) && ( LMIC.dataLen > 0 )) {
-
-			Serial.printf( "[LORAWAN   ] [DEBUG] No PORT Downlink payload: [" );
-			for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
-				Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
-			Serial.printf( "]\n" );
-			uint8_t commandID = LMIC.frame[ LMIC.dataBeg ];
-			Serial.printf("[LORAWAN   ] [DEBUG] Command ID: 0x%02X\n", commandID );
-                    
-	    }
-
+	while( !_message_sent )
 		delay( 100 );
-
-	}
-
-	Serial.printf( "[LORAWAN   ] [DEBUG] Packet %ssent\n", message_sent?"":"not "  );
 }
 
 void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )
@@ -226,4 +201,61 @@ void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )
 		mylen = 0;
 
 	send( &sendjob );
+}
+
+void AWSLoraWAN::set_joined( bool b )
+{
+	joined = b;
+}
+
+void onEvent( ev_t event )
+{
+	switch( event ) {
+
+		case EV_SCAN_TIMEOUT:
+		case EV_BEACON_FOUND:
+		case EV_BEACON_MISSED:
+		case EV_BEACON_TRACKED:
+        case EV_JOINING:
+		case EV_LOST_TSYNC:
+		case EV_RESET:
+        case EV_RXCOMPLETE:
+		case EV_LINK_DEAD:
+		case EV_LINK_ALIVE:
+		case EV_TXSTART:
+		case EV_TXCANCELED:
+		case EV_RXSTART:
+			break;
+
+		case EV_JOINED:
+			station.set_LoRaWAN_joined( true );
+			break;
+
+		case EV_JOIN_FAILED:
+		case EV_REJOIN_FAILED:
+			station.set_LoRaWAN_joined( false );
+            break;
+
+		case EV_TXCOMPLETE:
+
+//			if ( LMIC.txrxFlags & TXRX_ACK )
+//				Serial.println(F("Received ack"));
+
+			Serial.printf( "[LORAWAN   ] [INFO ] Packet sent\n" );
+
+			if ( LMIC.dataLen )
+				station.LoRaWAN_process_downlink();
+
+			station.LoRaWAN_message_sent();
+			
+			break;
+
+		case EV_JOIN_TXCOMPLETE:
+			station.set_LoRaWAN_joined( false );
+            break;
+
+		default:
+			Serial.printf( "[LORAWAN   ] [INFO ] Unknown event: %d\n", event  );
+            break;
+	}	
 }
