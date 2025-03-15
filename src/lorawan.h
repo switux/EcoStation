@@ -38,11 +38,13 @@ class AWSLoraWAN
 
 		bool					debug_mode		= false;
 		bool					joined 			= false;
+		bool					_message_sent	= false;
 		osjob_t					sendjob;
 		std::array<uint8_t,64>	mydata;
 		uint32_t				mylen;
-	
-		bool 	check_joined( void );
+		TaskHandle_t			loop_handle;
+
+		void 	loop( void * );
 
 	public:
 
@@ -50,11 +52,13 @@ class AWSLoraWAN
 		bool	begin( std::array<uint8_t,8>, std::array<uint8_t,16>, bool );
 		bool	join( void );
 		bool	has_joined( void );
+		void	message_sent( void );
 		void	prepare_for_deep_sleep( int );
+		void	process_downlink( void );
 		void	restore_after_deep_sleep( void );
 		void	send( osjob_t * );
 		void	send_data( uint8_t *, uint8_t );
-
+		void	set_joined( bool );
 };
 
 #endif

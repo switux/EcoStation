@@ -133,6 +133,8 @@ class EcoStation {
 		bool				initialise( void );
 		void				initialise_sensors( void );
 		bool				is_ready( void );
+		void				LoRaWAN_message_sent( void );
+		void				LoRaWAN_process_downlink( void );
 		bool				on_solar_panel();
 		bool				poll_sensors( void );
 		void				prepare_for_deep_sleep( int );
@@ -141,6 +143,7 @@ class EcoStation {
 		void				report_unavailable_sensors( void );
 		void				send_alarm( const char *, const char * );
 		void				send_data( void );
+		void				set_LoRaWAN_joined( bool );
 		bool				sync_time( bool );
 		void				trigger_ota_update( void );
 };

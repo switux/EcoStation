@@ -172,6 +172,16 @@ bool AWSNetwork::is_wifi_connected( void )
     return (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() ));
 }
 
+void AWSNetwork::LoRaWAN_message_sent( void )
+{
+	lorawan.message_sent();
+}
+
+void AWSNetwork::LoRaWAN_process_downlink( void )
+{
+	lorawan.process_downlink();
+}
+
 bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const char *jsonString )
 {
 	uint8_t				fe_len;
@@ -226,6 +236,11 @@ void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 	UNSELECT_SPI_DEVICES();
 	if ( lorawan.join() )
 		lorawan.send_data( buffer, len );
+}
+
+void AWSNetwork::set_LoRaWAN_joined( bool b )
+{
+	lorawan.set_joined( b );
 }
 
 bool AWSNetwork::start_hotspot( void )

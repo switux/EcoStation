@@ -463,6 +463,16 @@ bool EcoStation::is_ready( void )
 	return ready;
 }
 
+void EcoStation::LoRaWAN_message_sent( void )
+{
+	network.LoRaWAN_message_sent();
+}
+
+void EcoStation::LoRaWAN_process_downlink( void )
+{
+	network.LoRaWAN_process_downlink();
+}
+
 bool EcoStation::on_solar_panel( void )
 {
 	return solar_panel;
@@ -755,6 +765,11 @@ void EcoStation::send_data( void )
 
 	if ( !solar_panel )
 		xSemaphoreGive( sensors_read_mutex );
+}
+
+void EcoStation::set_LoRaWAN_joined( bool b )
+{
+	network.set_LoRaWAN_joined( b );
 }
 
 bool EcoStation::store_unsent_data( etl::string_view data )
