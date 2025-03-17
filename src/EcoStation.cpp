@@ -473,7 +473,7 @@ void EcoStation::LoRaWAN_process_downlink( void )
 
 	if ( debug_mode ) {
 
-		Serial.printf( "[STATION   ] [DEBUG] LoRaWAN downlink payload: [" );
+		Serial.printf( "[STATION   ] [DEBUG] LoRaWAN downlink payload on port %d: [", LMIC.frame[ LMIC.dataBeg - 1 ] );
 		for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
 			Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
 		Serial.printf( "]\n" );
@@ -487,7 +487,7 @@ void EcoStation::LoRaWAN_process_downlink( void )
 			msg |= ( 1ULL * SLEEP_DURATION )<<48;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 2 ] ) << 32;
-			network.queue_message( msg );
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 
 		case SPL_DURATION:
@@ -495,7 +495,7 @@ void EcoStation::LoRaWAN_process_downlink( void )
 			msg = ( 1ULL * ACK_COMMAND ) << 56;
 			msg |= ( 1ULL * SPL_DURATION ) << 48;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
-			network.queue_message( msg );
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 
 		case SYNC_NETWORK_TIME:
@@ -510,7 +510,7 @@ void EcoStation::LoRaWAN_process_downlink( void )
 		default:
 			msg = ( 1ULL * ACK_COMMAND )<<56;
 			msg |= ( 1ULL * UNKNOWN_COMMAND )<<48;
-			network.queue_message( msg );
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 	}
 }
