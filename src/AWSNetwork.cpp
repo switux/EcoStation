@@ -113,6 +113,11 @@ bool AWSNetwork::connect_to_wifi()
 	return false;
 }
 
+void AWSNetwork::empty_queue( void )
+{
+	lorawan.empty_queue();
+}
+
 uint8_t *AWSNetwork::get_wifi_mac( void )
 {
 	return wifi_mac;
@@ -177,11 +182,6 @@ void AWSNetwork::LoRaWAN_message_sent( void )
 	lorawan.message_sent();
 }
 
-void AWSNetwork::LoRaWAN_process_downlink( void )
-{
-	lorawan.process_downlink();
-}
-
 bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const char *jsonString )
 {
 	uint8_t				fe_len;
@@ -229,6 +229,11 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 {
 	lorawan.prepare_for_deep_sleep( deep_sleep_secs );
+}
+
+void AWSNetwork::queue_message( uint64_t msg )
+{
+	lorawan.queue_message( msg );
 }
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )

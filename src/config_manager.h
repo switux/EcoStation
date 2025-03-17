@@ -107,6 +107,8 @@ class AWSConfig {
 		bool 					load( etl::string<64> &, bool );
 		void					reset_parameter( const char * );
 		bool					rollback( void );
+		template <typename T>
+		void					set_parameter( const char *, T );
 		bool					save_runtime_configuration( JsonVariant & );
 		bool 					update( JsonVariant &json );
 
@@ -219,6 +221,20 @@ T AWSConfig::get_parameter( const char *key )
 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
+}
+
+template <typename T>
+void AWSConfig::set_parameter( const char *key, T value )
+{
+	switch( str2int( key )) {
+
+		case str2int( "sleep_duration" ):
+		case str2int( "spl_duration" ):
+			json_config[key] = value;
+			break;
+		default:
+			break;
+	}
 }
 
 #endif

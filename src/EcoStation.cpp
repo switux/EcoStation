@@ -45,7 +45,6 @@
 #include "config_server.h"
 #include "AWSNetwork.h"
 #include "EcoStation.h"
-//#include "manifest.h"
 
 extern SemaphoreHandle_t	sensors_read_mutex;
 
@@ -470,7 +469,50 @@ void EcoStation::LoRaWAN_message_sent( void )
 
 void EcoStation::LoRaWAN_process_downlink( void )
 {
-	network.LoRaWAN_process_downlink();
+	uint64_t	msg = 0;
+
+	if ( debug_mode ) {
+
+		Serial.printf( "[STATION   ] [DEBUG] LoRaWAN downlink payload: [" );
+		for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+			Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+		Serial.printf( "]\n" );
+	}
+
+	switch( LMIC.frame[ LMIC.dataBeg ] ) {
+
+		case SLEEP_DURATION:
+			config.set_parameter( "sleep_duration", ( LMIC.frame[ LMIC.dataBeg + 2 ] << 8 ) + LMIC.frame[ LMIC.dataBeg + 1 ] );
+			msg = ( 1ULL * ACK_COMMAND )<<56;
+			msg |= ( 1ULL * SLEEP_DURATION )<<48;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 2 ] ) << 32;
+			network.queue_message( msg );
+			break;
+
+		case SPL_DURATION:
+			config.set_parameter( "spl_duration", LMIC.frame[ LMIC.dataBeg + 1 ] );
+			msg = ( 1ULL * ACK_COMMAND ) << 56;
+			msg |= ( 1ULL * SPL_DURATION ) << 48;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
+			network.queue_message( msg );
+			break;
+
+		case SYNC_NETWORK_TIME:
+			break;
+
+		case FORCE_MAINTENANCE:
+			break;
+
+		case FORCE_OTA:
+			break;
+
+		default:
+			msg = ( 1ULL * ACK_COMMAND )<<56;
+			msg |= ( 1ULL * UNKNOWN_COMMAND )<<48;
+			network.queue_message( msg );
+			break;
+	}
 }
 
 bool EcoStation::on_solar_panel( void )
@@ -760,6 +802,8 @@ void EcoStation::send_data( void )
 		network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() );
 
 	store_unsent_data( etl::string_view( json_sensor_data ));
+
+	network.empty_queue();
 
 	digitalWrite( GPIO_ENABLE_3_3V, LOW );
 

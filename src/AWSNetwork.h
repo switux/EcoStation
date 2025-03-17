@@ -51,14 +51,15 @@ class AWSNetwork {
 					AWSNetwork( void );
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
+		void		empty_queue( void );
 		uint8_t		*get_wifi_mac( void );
 		bool		has_joined( void );
 		void		initialise( AWSConfig *, bool );
 		bool		initialise_wifi( void );
 		bool		is_wifi_connected( void );
 		void		LoRaWAN_message_sent( void );
-		void		LoRaWAN_process_downlink( void );
 		bool		post_content( const char *, size_t, const char * );
+		void		queue_message( uint64_t );
 		void		prepare_for_deep_sleep( int );
 		void		send_raw_data( uint8_t *, uint8_t );
 		void		set_LoRaWAN_joined( bool );
