@@ -39,8 +39,9 @@ class AWSLoraWAN
 		bool					debug_mode		= false;
 		bool					joined 			= false;
 		bool					_message_sent	= false;
-		bool					msg_waiting		= false;
 		uint64_t				msg;
+		bool					msg_waiting		= false;
+		uint8_t					msg_port;
 		osjob_t					sendjob;
 		std::array<uint8_t,64>	mydata;
 		uint32_t				mylen;
@@ -58,7 +59,7 @@ class AWSLoraWAN
 		void	message_sent( void );
 		void	prepare_for_deep_sleep( int );
 		void	process_downlink( void );
-		void	queue_message( uint64_t );
+		void	queue_message( uint8_t, uint64_t );
 		void	restore_after_deep_sleep( void );
 		void	send( osjob_t * );
 		void	send_data( uint8_t *, uint8_t );

@@ -77,7 +77,7 @@ bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> app
 			(*periodic_tasks_proxy)( NULL );
 		}, "LORALOOP Task", 5000, &_loop, 5, &loop_handle, 1 ) != pdPASS )
 
-		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" );
+		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" ); 
 
 	return true;
 }
@@ -86,6 +86,12 @@ void AWSLoraWAN::empty_queue( void )
 {
 	if ( !msg_waiting )
 		return;
+
+	if ( !msg_port ) {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] Queued message is on port 0, dropping.\n" );
+		return;
+	}
 
 	unsigned long	start = millis();
 	while( ( LMIC.opmode & ( OP_POLL | OP_TXDATA | OP_JOINING | OP_TXRXPEND ) != 0 )
@@ -105,14 +111,13 @@ void AWSLoraWAN::empty_queue( void )
 	memcpy( mydata.data(), &msg, 8 );
 	if ( debug_mode ) {
 
-		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes [", 8 );
-
+		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes on port %d [", 8, msg_port );
 		for( int i = 0; i < 8; i++ )
 			Serial.printf( "%02x ", mydata[ i ] );
 		Serial.printf( "]\n" );
 	}
 
-	LMIC_setTxData2( 2, mydata.data(), 8, 0 );
+	LMIC_setTxData2( msg_port, mydata.data(), 8, 0 );
 
 	while( !_message_sent )
 		delay( 100 );
@@ -197,11 +202,11 @@ void AWSLoraWAN::process_downlink( void )
 	Serial.printf( "]\n" );
 }
 
-void AWSLoraWAN::queue_message( uint64_t _msg )
+void AWSLoraWAN::queue_message( uint8_t port, uint64_t _msg )
 {
 	msg = _msg;
 	msg_waiting = true;
-	Serial.printf("uplink : 0x%llx\n", msg );
+	msg_port = port;
 }
 
 void AWSLoraWAN::restore_after_deep_sleep( void )

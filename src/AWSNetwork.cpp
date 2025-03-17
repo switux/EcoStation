@@ -231,9 +231,9 @@ void AWSNetwork::prepare_for_deep_sleep( int deep_sleep_secs )
 	lorawan.prepare_for_deep_sleep( deep_sleep_secs );
 }
 
-void AWSNetwork::queue_message( uint64_t msg )
+void AWSNetwork::queue_message( uint8_t port, uint64_t msg )
 {
-	lorawan.queue_message( msg );
+	lorawan.queue_message( port, msg );
 }
 
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
