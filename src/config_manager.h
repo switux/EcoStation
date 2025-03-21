@@ -109,6 +109,7 @@ class AWSConfig {
 		bool					rollback( void );
 		template <typename T>
 		void					set_parameter( const char *, T );
+		bool					save_current_configuration( void );
 		bool					save_runtime_configuration( JsonVariant & );
 		bool 					update( JsonVariant &json );
 

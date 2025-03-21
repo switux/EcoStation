@@ -25,7 +25,8 @@
 
 #include <HardwareSerial.h>
 
-AT24C::AT24C( void ) : AT24C( AT24C_ADDRESS ) {
+AT24C::AT24C( void ) : AT24C( AT24C_ADDRESS )
+{
 }
 
 AT24C::AT24C( uint8_t addr ) : eeprom_address( addr )
