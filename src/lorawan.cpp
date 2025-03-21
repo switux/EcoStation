@@ -77,7 +77,7 @@ bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> app
 			(*periodic_tasks_proxy)( NULL );
 		}, "LORALOOP Task", 5000, &_loop, 5, &loop_handle, 1 ) != pdPASS )
 
-		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" ); 
+		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" );
 
 	return true;
 }
@@ -100,7 +100,7 @@ void AWSLoraWAN::empty_queue( void )
 	}
 
 	// Well, it is actually desirable to notify back but sometimes it cannot be helped and we
-	// do not want to draw on he batteries too much
+	// do not want to draw on the batteries too much
 	if ( LMIC.opmode & ( OP_POLL | OP_TXDATA | OP_JOINING | OP_TXRXPEND ) != 0 ) {
 
 		Serial.printf( "[LORAWAN   ] [INFO ] Timeout waiting for clear TX path! Dropping message.\n" );
