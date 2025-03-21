@@ -110,7 +110,7 @@ class EcoStation {
 		bool						ready						= false;
 		AWSSensorManager 			sensor_manager;
 		AWSWebServer 				server;
-		bool						solar_panel;
+		bool						solar_panel					= false;
 		uint16_t					sleep_duration				= 15;
 		station_data_t				station_data;
 
