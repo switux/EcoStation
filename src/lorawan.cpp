@@ -58,7 +58,7 @@ bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> app
 	os_init();
 	LMIC_reset();
 	restore_after_deep_sleep();
-	
+
 	if ( !joined )
 
 		Serial.printf( "[LORAWAN   ] [INFO ] Need to rejoin network.\n" );
@@ -76,10 +76,51 @@ bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> app
 			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*periodic_tasks_proxy)( NULL );
 		}, "LORALOOP Task", 5000, &_loop, 5, &loop_handle, 1 ) != pdPASS )
-		
-		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" ); 
+
+		Serial.printf( "[LORAWAN   ] [ERROR] Failed to start LoRaWAN event loop.\n" );
 
 	return true;
+}
+
+void AWSLoraWAN::empty_queue( void )
+{
+	if ( !msg_waiting )
+		return;
+
+	if ( !msg_port ) {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] Queued message is on port 0, dropping.\n" );
+		return;
+	}
+
+	unsigned long	start = millis();
+	while( ( LMIC.opmode & ( OP_POLL | OP_TXDATA | OP_JOINING | OP_TXRXPEND ) != 0 )
+			&& ( ( millis() - start ) < ( 30*1000 ) ) ) {
+		delay( 5000 );
+	}
+
+	// Well, it is actually desirable to notify back but sometimes it cannot be helped and we
+	// do not want to draw on the batteries too much
+	if ( LMIC.opmode & ( OP_POLL | OP_TXDATA | OP_JOINING | OP_TXRXPEND ) != 0 ) {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] Timeout waiting for clear TX path! Dropping message.\n" );
+		return;
+	}
+
+	_message_sent = false;
+	memcpy( mydata.data(), &msg, 8 );
+	if ( debug_mode ) {
+
+		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes on port %d [", 8, msg_port );
+		for( int i = 0; i < 8; i++ )
+			Serial.printf( "%02x ", mydata[ i ] );
+		Serial.printf( "]\n" );
+	}
+
+	LMIC_setTxData2( msg_port, mydata.data(), 8, 0 );
+
+	while( !_message_sent )
+		delay( 100 );
 }
 
 bool AWSLoraWAN::join( void )
@@ -103,7 +144,7 @@ bool AWSLoraWAN::join( void )
 
 	else {
 
-		Serial.printf( "[LORAWAN   ] [INFO ] Already joined with addr 0x04lx.\n", LMIC.devaddr );
+		Serial.printf( "[LORAWAN   ] [INFO ] Joined with addr 0x%04lx.\n", LMIC.devaddr );
 		LMIC_setLinkCheckMode( 1 );
 	}
 
@@ -115,9 +156,9 @@ bool AWSLoraWAN::has_joined( void )
 	return joined;
 }
 
-void AWSLoraWAN::loop( void *dummy )
+void AWSLoraWAN::loop( void *dummy )	// NOSONAR
 {
-	while( 1 ) {
+	while( true ) {
 
 		delay( 1 );
 		os_runloop_once();
@@ -161,6 +202,13 @@ void AWSLoraWAN::process_downlink( void )
 	Serial.printf( "]\n" );
 }
 
+void AWSLoraWAN::queue_message( uint8_t port, uint64_t _msg )
+{
+	msg = _msg;
+	msg_waiting = true;
+	msg_port = port;
+}
+
 void AWSLoraWAN::restore_after_deep_sleep( void )
 {
 	if ( !RTC_LMIC.seqnoUp )
@@ -192,7 +240,7 @@ void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )
 {
 	std::fill( mydata.begin(), mydata.end(), 0 );
 	if ( len <= mydata.max_size() ) {
-		
+
 		memcpy( mydata.data(), buffer, len );
 		mylen = len;
 
@@ -238,8 +286,8 @@ void onEvent( ev_t event )
 
 		case EV_TXCOMPLETE:
 
-//			if ( LMIC.txrxFlags & TXRX_ACK )
-//				Serial.println(F("Received ack"));
+			if ( LMIC.txrxFlags & TXRX_ACK )
+				Serial.println( "[LORAWAN   ] [INFO ] Received ACK.\n" );
 
 			Serial.printf( "[LORAWAN   ] [INFO ] Packet sent\n" );
 
@@ -247,7 +295,7 @@ void onEvent( ev_t event )
 				station.LoRaWAN_process_downlink();
 
 			station.LoRaWAN_message_sent();
-			
+
 			break;
 
 		case EV_JOIN_TXCOMPLETE:
@@ -257,5 +305,5 @@ void onEvent( ev_t event )
 		default:
 			Serial.printf( "[LORAWAN   ] [INFO ] Unknown event: %d\n", event  );
             break;
-	}	
+	}
 }

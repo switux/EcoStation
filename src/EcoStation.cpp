@@ -45,7 +45,6 @@
 #include "config_server.h"
 #include "AWSNetwork.h"
 #include "EcoStation.h"
-//#include "manifest.h"
 
 extern SemaphoreHandle_t	sensors_read_mutex;
 
@@ -73,7 +72,6 @@ EcoStation::EcoStation( void )
 							(( BUILD_ID[4] - '0') * 100000 ) + (( BUILD_ID[5] - '0') * 10000 ) +\
 							(( BUILD_ID[6] - '0') * 1000 ) + (( BUILD_ID[7] - '0') * 100 ) +\
 							(( BUILD_ID[10] - '0') * 10 ) + (( BUILD_ID[11] - '0'));
-	compact_data.sleep_minutes = static_cast<int>( ( US_SLEEP / 1000000 ) / 60 );
 }
 
 bool EcoStation::activate_sensors( void )
@@ -356,11 +354,8 @@ bool EcoStation::initialise( void )
 	station_data.reset_reason = esp_reset_reason();
 	compact_data.reset_reason = station_data.reset_reason;
 
-	if ( solar_panel ) {
-
-		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
-		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
-	}
+	pinMode( GPIO_ENABLE_3_3V, OUTPUT );
+	digitalWrite( GPIO_ENABLE_3_3V, HIGH );
 
 	if ( !config.load( station_data.firmware_sha56, debug_mode ) )
 			return false;
@@ -371,6 +366,8 @@ bool EcoStation::initialise( void )
 	station_data.health.fs_free_space = config.get_fs_free_space();
 	compact_data.fs_free_space = station_data.health.fs_free_space;
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
+
+	compact_data.sleep_minutes = config.get_parameter<uint16_t>( "sleep_minutes" );
 
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
 	sensor_manager.set_solar_panel( solar_panel );
@@ -411,7 +408,6 @@ bool EcoStation::initialise( void )
 		// Issue #143
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
-		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
 		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
 
 		fixup_timestamp();
@@ -470,7 +466,56 @@ void EcoStation::LoRaWAN_message_sent( void )
 
 void EcoStation::LoRaWAN_process_downlink( void )
 {
-	network.LoRaWAN_process_downlink();
+	uint64_t	msg = 0;
+
+	if ( debug_mode ) {
+
+		Serial.printf( "[STATION   ] [DEBUG] LoRaWAN downlink payload on port %d: [", LMIC.frame[ LMIC.dataBeg - 1 ] );
+		for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
+			Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
+		Serial.printf( "]\n" );
+	}
+
+	switch( LMIC.frame[ LMIC.dataBeg ] ) {
+
+		case SLEEP_MINUTES:
+			config.set_parameter( "sleep_minutes", static_cast<uint16_t>(( LMIC.frame[ LMIC.dataBeg + 2 ] << 8 ) + LMIC.frame[ LMIC.dataBeg + 1 ] ));
+			if ( config.save_current_configuration() )
+				msg = ( 1ULL * ACK_COMMAND ) << 56;
+			else
+				msg = ( 1ULL * NACK_COMMAND ) << 56;
+			msg |= ( 1ULL * SLEEP_MINUTES )<<48;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 2 ] ) << 32;
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
+			break;
+
+		case SPL_DURATION:
+			config.set_parameter( "spl_duration", LMIC.frame[ LMIC.dataBeg + 1 ] );
+			if ( config.save_current_configuration() )
+				msg = ( 1ULL * ACK_COMMAND ) << 56;
+			else
+				msg = ( 1ULL * NACK_COMMAND ) << 56;
+			msg |= ( 1ULL * SPL_DURATION ) << 48;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
+			break;
+
+		case SYNC_NETWORK_TIME:
+			break;
+
+		case FORCE_MAINTENANCE:
+			break;
+
+		case FORCE_OTA:
+			break;
+
+		default:
+			msg = ( 1ULL * ACK_COMMAND )<<56;
+			msg |= ( 1ULL * UNKNOWN_COMMAND )<<48;
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
+			break;
+	}
 }
 
 bool EcoStation::on_solar_panel( void )
@@ -761,6 +806,8 @@ void EcoStation::send_data( void )
 
 	store_unsent_data( etl::string_view( json_sensor_data ));
 
+	network.empty_queue();
+
 	digitalWrite( GPIO_ENABLE_3_3V, LOW );
 
 	if ( !solar_panel )
@@ -844,7 +891,7 @@ bool EcoStation::sync_time( bool verbose )
 
 			// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
 			ntp_time_misses++;
-			sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+			sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( get_config().get_parameter<uint16_t>( "sleep_minutes" ) * 60 ) * ntp_time_misses;
 
 		}
 	}

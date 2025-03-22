@@ -107,6 +107,9 @@ class AWSConfig {
 		bool 					load( etl::string<64> &, bool );
 		void					reset_parameter( const char * );
 		bool					rollback( void );
+		template <typename T>
+		void					set_parameter( const char *, T );
+		bool					save_current_configuration( void );
 		bool					save_runtime_configuration( JsonVariant & );
 		bool 					update( JsonVariant &json );
 
@@ -142,7 +145,7 @@ class AWSConfig {
 		void				set_missing_network_parameters_to_default_values( void );
 		void				set_missing_parameters_to_default_values( void );
 		void				set_root_ca( JsonVariant & );
-		void				to_hex_array( const char*, uint8_t * );
+		void				to_hex_array( const char*, uint8_t *, bool );
 		void				update_fs_free_space( void );
 		bool				verify_entries( JsonVariant & );
 };
@@ -198,6 +201,8 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "pref_iface" ):
 		case str2int( "push_freq" ):
 		case str2int( "remote_server" ):
+		case str2int( "sleep_minutes" ):
+		case str2int( "spl_duration" ):
 		case str2int( "tzname" ):
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):
@@ -219,6 +224,21 @@ T AWSConfig::get_parameter( const char *key )
 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
+}
+
+template <typename T>
+void AWSConfig::set_parameter( const char *key, T value )
+{
+	switch( str2int( key )) {
+
+		case str2int( "sleep_minutes" ):
+		case str2int( "spl_duration" ):
+			json_config[key] = value;
+			break;
+
+		default:
+			break;
+	}
 }
 
 #endif

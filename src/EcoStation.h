@@ -42,6 +42,15 @@ const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in m
 const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
 const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
+const uint8_t SLEEP_MINUTES		= 0x01;
+const uint8_t SPL_DURATION		= 0x02;
+const uint8_t SYNC_NETWORK_TIME	= 0x03;
+const uint8_t FORCE_MAINTENANCE	= 0x04;
+const uint8_t FORCE_OTA			= 0x05;
+const uint8_t UNKNOWN_COMMAND	= 0xFD;
+const uint8_t NACK_COMMAND		= 0xFE;
+const uint8_t ACK_COMMAND		= 0xFF;
+
 #define UNSELECT_SPI_DEVICES()	\
 	do {\
 		digitalWrite( GPIO_SD_CS, HIGH ); \
@@ -102,7 +111,7 @@ class EcoStation {
 		bool						ready						= false;
 		AWSSensorManager 			sensor_manager;
 		AWSWebServer 				server;
-		bool						solar_panel;
+		bool						solar_panel					= false;
 		station_data_t				station_data;
 
 		void 			determine_boot_mode( void );
