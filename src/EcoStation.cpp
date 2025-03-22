@@ -72,7 +72,6 @@ EcoStation::EcoStation( void )
 							(( BUILD_ID[4] - '0') * 100000 ) + (( BUILD_ID[5] - '0') * 10000 ) +\
 							(( BUILD_ID[6] - '0') * 1000 ) + (( BUILD_ID[7] - '0') * 100 ) +\
 							(( BUILD_ID[10] - '0') * 10 ) + (( BUILD_ID[11] - '0'));
-	compact_data.sleep_minutes = static_cast<int>( ( US_SLEEP / 1000000 ) / 60 );
 }
 
 bool EcoStation::activate_sensors( void )
@@ -368,6 +367,8 @@ bool EcoStation::initialise( void )
 	compact_data.fs_free_space = station_data.health.fs_free_space;
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
 
+	compact_data.sleep_minutes = config.get_parameter<uint16_t>( "sleep_minutes" );
+
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
@@ -477,10 +478,13 @@ void EcoStation::LoRaWAN_process_downlink( void )
 
 	switch( LMIC.frame[ LMIC.dataBeg ] ) {
 
-		case SLEEP_DURATION:
-			config.set_parameter( "sleep_duration", ( LMIC.frame[ LMIC.dataBeg + 2 ] << 8 ) + LMIC.frame[ LMIC.dataBeg + 1 ] );
-			msg = ( 1ULL * ACK_COMMAND )<<56;
-			msg |= ( 1ULL * SLEEP_DURATION )<<48;
+		case SLEEP_MINUTES:
+			config.set_parameter( "sleep_minutes", static_cast<uint16_t>(( LMIC.frame[ LMIC.dataBeg + 2 ] << 8 ) + LMIC.frame[ LMIC.dataBeg + 1 ] ));
+			if ( config.save_current_configuration() )
+				msg = ( 1ULL * ACK_COMMAND ) << 56;
+			else
+				msg = ( 1ULL * NACK_COMMAND ) << 56;
+			msg |= ( 1ULL * SLEEP_MINUTES )<<48;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 2 ] ) << 32;
 			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
@@ -488,7 +492,10 @@ void EcoStation::LoRaWAN_process_downlink( void )
 
 		case SPL_DURATION:
 			config.set_parameter( "spl_duration", LMIC.frame[ LMIC.dataBeg + 1 ] );
-			msg = ( 1ULL * ACK_COMMAND ) << 56;
+			if ( config.save_current_configuration() )
+				msg = ( 1ULL * ACK_COMMAND ) << 56;
+			else
+				msg = ( 1ULL * NACK_COMMAND ) << 56;
 			msg |= ( 1ULL * SPL_DURATION ) << 48;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
 			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
@@ -884,7 +891,7 @@ bool EcoStation::sync_time( bool verbose )
 
 			// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
 			ntp_time_misses++;
-			sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+			sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( get_config().get_parameter<uint16_t>( "sleep_minutes" ) * 60 ) * ntp_time_misses;
 
 		}
 	}

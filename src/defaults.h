@@ -28,6 +28,8 @@ const etl::string<128>	DEFAULT_LOCATION					= "Somewhere on Earth";
 
 const uint8_t			AT24C_ADDRESS						= 0x50;
 
+const unsigned long		DEFAULT_SLEEP_MINUTES	= 15;
+
 const uint32_t			DEFAULT_SENSOR_POLLING_MS_INTERVAL	= 15000;
 
 static const uint8_t DEFAULT_AUTOMATIC_UPDATES		= 1;
@@ -47,6 +49,7 @@ static const char DEFAULT_WIFI_AP_DNS[]			= "8.8.8.8";
 static const char DEFAULT_ETH_IP[]				= "192.168.170.1/24";
 static const char DEFAULT_ETH_GW[]				= "192.168.170.1";
 static const char DEFAULT_ETH_DNS[]				= "8.8.8.8";
+
 
 // Datamancers.net ROOT CA
 static const char  DEFAULT_ROOT_CA[] =

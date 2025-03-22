@@ -33,7 +33,6 @@ const uint8_t DEBUG_MODE = 1;
 
 const uint8_t COMPACT_DATA_FORMAT_VERSION = 0x03;
 
-extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
 extern HardwareSerial			Serial1;	// NOSONAR
 
@@ -163,7 +162,7 @@ struct compact_data_t {
 
 	int				reset_reason;
 	uint32_t		build_info;
-	uint8_t			sleep_minutes;
+	uint16_t		sleep_minutes;
 } __attribute__ ((packed));
 
 void loop( void );

@@ -262,6 +262,7 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
 				eeprom.read_buffer( 32, reinterpret_cast<uint8_t*>(serialised_config.data()), config_size );
 				if ( debug_mode )
 					Serial.printf( "[CONFIGMNGR] [DEBUG] EEPROM: %d bytes (%s)\n", config_size, serialised_config.data() );
+				serialised_config.repair();
 				deserializeJson( eeprom_config, serialised_config.data() );
 				use_nvs = false;
 
@@ -357,11 +358,12 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
 		rtc = ( eeprom_config["has_rtc"] == 1 );
 		sdcard = ( eeprom_config["has_sdcard"] == 1 );
 		lorawan = ( eeprom_config["has_lorawan"] == 1 );
+		pwr_mode = (aws_pwr_src) eeprom_config["pwr_mode"].as<uint8_t>();
+
 		if ( lorawan ) {
 
-			to_hex_array( eeprom_config["lorawan_deveui"].as<String>().c_str(), lora_eui.data() );
-			to_hex_array( eeprom_config["lorawan_appkey"].as<String>().c_str(), lora_appkey.data() );
-
+			to_hex_array( eeprom_config["lorawan_deveui"], lora_eui.data(), true );
+			to_hex_array( eeprom_config["lorawan_appkey"], lora_appkey.data(), false );
 		}
 
 	}
@@ -479,12 +481,17 @@ bool AWSConfig::rollback()
 
 bool AWSConfig::save_current_configuration( void )
 {
-	return save_runtime_configuration( &json_config );
+	JsonVariant v = json_config.as<JsonVariant>();
+	return save_runtime_configuration( v );
 }
 
 bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 {
 	size_t	s;
+
+	_json_config.remove( "has_rtc" );
+	_json_config.remove( "has_lorawan" );
+	_json_config.remove( "has_sdcard" );
 
 	if ( !verify_entries( _json_config ))
 		return false;
@@ -565,53 +572,53 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 void AWSConfig::set_missing_network_parameters_to_default_values( void )
 {
-  if ( !json_config["wifi_ap_ssid"].is<JsonVariant>())
-    json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
+	if ( !json_config["wifi_ap_ssid"].is<JsonVariant>())
+		json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
 
-  if ( !json_config["config_port"].is<JsonVariant>( ))
-    json_config["config_port"] = DEFAULT_CONFIG_PORT;
+	if ( !json_config["config_port"].is<JsonVariant>( ))
+		json_config["config_port"] = DEFAULT_CONFIG_PORT;
 
-  if ( !json_config["pref_iface"].is<JsonVariant>( ))
-    json_config["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
+	if ( !json_config["pref_iface"].is<JsonVariant>( ))
+		json_config["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
 
-  if ( !json_config["remote_server"].is<JsonVariant>( ))
-    json_config["remote_server"] = DEFAULT_SERVER;
+	if ( !json_config["remote_server"].is<JsonVariant>( ))
+		json_config["remote_server"] = DEFAULT_SERVER;
 
-  if ( !json_config["wifi_sta_ssid"].is<JsonVariant>( ))
-    json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
+	if ( !json_config["wifi_sta_ssid"].is<JsonVariant>( ))
+		json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
 
-  if ( !json_config["url_path"].is<JsonVariant>( ))
-    json_config["url_path"] = DEFAULT_URL_PATH;
+	if ( !json_config["url_path"].is<JsonVariant>( ))
+		json_config["url_path"] = DEFAULT_URL_PATH;
 
-  if ( !json_config["wifi_ap_dns"].is<JsonVariant>( ))
-    json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
+	if ( !json_config["wifi_ap_dns"].is<JsonVariant>( ))
+		json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
 
-  if ( !json_config["wifi_ap_gw"].is<JsonVariant>( ))
-    json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
+	if ( !json_config["wifi_ap_gw"].is<JsonVariant>( ))
+		json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
 
-  if ( !json_config["wifi_ap_ip"].is<JsonVariant>( ))
-    json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
+	if ( !json_config["wifi_ap_ip"].is<JsonVariant>( ))
+		json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
 
-  if ( !json_config["wifi_ap_password"].is<JsonVariant>( ))
-    json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
+	if ( !json_config["wifi_ap_password"].is<JsonVariant>( ))
+		json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
 
-  if ( !json_config["wifi_mode"].is<JsonVariant>( ))
-    json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
+	if ( !json_config["wifi_mode"].is<JsonVariant>( ))
+		json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
 
-  if ( !json_config["wifi_sta_dns"].is<JsonVariant>( ))
-    json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
+	if ( !json_config["wifi_sta_dns"].is<JsonVariant>( ))
+		json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
 
-  if ( !json_config["wifi_sta_gw"].is<JsonVariant>( ))
-    json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
+	if ( !json_config["wifi_sta_gw"].is<JsonVariant>( ))
+		json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
 
-  if ( !json_config["wifi_sta_ip"].is<JsonVariant>( ))
-    json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
+	if ( !json_config["wifi_sta_ip"].is<JsonVariant>( ))
+		json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
 
-  if ( !json_config["wifi_sta_ip_mode"].is<JsonVariant>( ))
-    json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
+	if ( !json_config["wifi_sta_ip_mode"].is<JsonVariant>( ))
+		json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
 
-  if ( !json_config["wifi_sta_password"].is<JsonVariant>( ))
-    json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
+	if ( !json_config["wifi_sta_password"].is<JsonVariant>( ))
+		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
 }
 
 void AWSConfig::set_missing_parameters_to_default_values( void )
@@ -668,123 +675,136 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 
 	if ( !json_config["ota_url"].is<JsonVariant>( ))
 		json_config["ota_url"] = DEFAULT_OTA_URL;
+
+	if ( !json_config["sleep_minutes"].is<JsonVariant>( ))
+		json_config["sleep_minutes"] = DEFAULT_SLEEP_MINUTES;
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
 {
-  if ( _json_config["root_ca"].is<JsonVariant>( )) {
+	if ( _json_config["root_ca"].is<JsonVariant>( )) {
 
-    _json_config[ "root_ca" ][ 4096 - 1 ] = 0;	// Must be updated along DYNAMIC_JSON_DOCUMENT_SIZE
-    if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
-      root_ca.assign( _json_config["root_ca"].as<const char *>() );
-      _json_config.remove( "root_ca" );
-      return;
-    }
-  }
-  root_ca.empty();
+		_json_config[ "root_ca" ][ 4096 - 1 ] = 0;	// Must be updated along DYNAMIC_JSON_DOCUMENT_SIZE
+		if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
+
+			root_ca.assign( _json_config["root_ca"].as<const char *>() );
+			_json_config.remove( "root_ca" );
+			return;
+		}
+	}
+	root_ca.empty();
 }
 
-void AWSConfig::to_hex_array( const char* s, uint8_t *tmp )
+void AWSConfig::to_hex_array( const char* s, uint8_t *tmp, bool reverse )
 {
-  int i = 0;
-  while ( *s && s[ 1 ] ) {
+	int i = reverse ? ( strlen( s ) / 2 ) - 1 : 0;
+	int j = reverse ? -1 : 1;
 
-    tmp[i++] = char2int( *s ) * 16 + char2int( s[ 1 ] );
-    s += 2;
-  }
+	while ( *s && s[ 1 ] ) {
+
+		tmp[ i ] = char2int( *s ) * 16 + char2int( s[ 1 ] );
+		i += j;
+		s += 2;
+	}
 }
 
 void AWSConfig::update_fs_free_space( void )
 {
-  fs_free_space = LittleFS.totalBytes() - LittleFS.usedBytes();
+	fs_free_space = LittleFS.totalBytes() - LittleFS.usedBytes();
 }
 
 bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 {
-  // proposed_config will de facto be modified in this function as
-  // config_items is only a way of presenting the items in proposed_config
+	// proposed_config will de facto be modified in this function as
+	// config_items is only a way of presenting the items in proposed_config
 
-  JsonObject config_items = proposed_config.as<JsonObject>();
-  aws_ip_mode x = aws_ip_mode::dhcp;
+	JsonObject config_items = proposed_config.as<JsonObject>();
+	aws_ip_mode x = aws_ip_mode::dhcp;
 
-  for ( JsonPair item : config_items ) {
+	for ( JsonPair item : config_items ) {
 
-    // Cloud coverage
-    switch ( str2int( item.key().c_str() )) {
+		// Cloud coverage & SQM
+		switch ( str2int( item.key().c_str() )) {
 
-      case str2int( "cc_aag_cloudy" ):
-      case str2int( "cc_aag_overcast" ):
-      case str2int( "cc_aws_cloudy" ):
-      case str2int( "cc_aws_overcast" ):
-      case str2int( "cloud_coverage_formula" ):
-      case str2int( "k1" ):
-      case str2int( "k2" ):
-      case str2int( "k3" ):
-      case str2int( "k4" ):
-      case str2int( "k5" ):
-      case str2int( "k6" ):
-      case str2int( "k7" ):
-        continue;
-      default:
-        break;
-    }
+			case str2int( "cc_aag_cloudy" ):
+			case str2int( "cc_aag_overcast" ):
+			case str2int( "cc_aws_cloudy" ):
+			case str2int( "cc_aws_overcast" ):
+			case str2int( "cloud_coverage_formula" ):
+			case str2int( "k1" ):
+			case str2int( "k2" ):
+			case str2int( "k3" ):
+			case str2int( "k4" ):
+			case str2int( "k5" ):
+			case str2int( "k6" ):
+			case str2int( "k7" ):
+			case str2int( "msas_calibration_offset" ):
+				continue;
+			default:
+				break;
+		}
 
-	// General
-	switch( str2int( item.key().c_str() )) {
+		// General
+		switch( str2int( item.key().c_str() )) {
 
-		case str2int( "sleep_duration" ):
-		case str2int( "spl_duration" ):
-			continue;
-		default:
-			break;
+			case str2int( "sleep_minutes" ):
+			case str2int( "spl_duration" ):
+				Serial.printf("GENERAL [%s]=[%d]\n",item.key().c_str(), item.value() );
+				continue;
+
+			default:
+				break;
+		}
+
+		// Network
+		switch ( str2int( item.key().c_str() )) {
+
+			case str2int( "config_port" ):
+			case str2int( "ota_url" ):
+			case str2int( "pref_iface" ):
+			case str2int( "push_freq" ):
+			case str2int( "remote_server" ):
+			case str2int( "root_ca" ):
+			case str2int( "tzname" ):
+			case str2int( "url_path" ):
+			case str2int( "wifi_ap_dns" ):
+			case str2int( "wifi_ap_gw" ):
+			case str2int( "wifi_ap_ip" ):
+			case str2int( "wifi_ap_password" ):
+			case str2int( "wifi_ap_ssid" ):
+			case str2int( "wifi_mode" ):
+			case str2int( "wifi_sta_dns" ):
+			case str2int( "wifi_sta_gw" ):
+			case str2int( "wifi_sta_ip" ):
+			case str2int( "wifi_sta_ip_mode" ):
+			case str2int( "wifi_sta_password" ):
+			case str2int( "wifi_sta_ssid" ):
+				continue;
+			case str2int( "automatic_updates" ):
+			case str2int( "data_push" ):
+				proposed_config[ item.key().c_str() ] = 1;
+				continue;
+				break;
+
+			default:
+				break;
+		}
+
+		// Sensors
+		switch ( str2int( item.key().c_str() )) {
+
+			case str2int( "has_bme" ):
+			case str2int( "has_mlx" ):
+			case str2int( "has_spl" ):
+			case str2int( "has_tsl" ):
+				proposed_config[ item.key().c_str() ] = 1;
+				break;
+
+			default:
+				Serial.printf( "[CONFIGMNGR] [ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
+				return false;
+		}
 	}
 
-    // Network
-    switch ( str2int( item.key().c_str() )) {
-
-      case str2int( "ota_url" ):
-      case str2int( "pref_iface" ):
-      case str2int( "push_freq" ):
-      case str2int( "remote_server" ):
-      case str2int( "root_ca" ):
-      case str2int( "tzname" ):
-      case str2int( "url_path" ):
-      case str2int( "wifi_ap_dns" ):
-      case str2int( "wifi_ap_gw" ):
-      case str2int( "wifi_ap_ip" ):
-      case str2int( "wifi_ap_password" ):
-      case str2int( "wifi_ap_ssid" ):
-      case str2int( "wifi_mode" ):
-      case str2int( "wifi_sta_dns" ):
-      case str2int( "wifi_sta_gw" ):
-      case str2int( "wifi_sta_ip" ):
-      case str2int( "wifi_sta_ip_mode" ):
-      case str2int( "wifi_sta_password" ):
-      case str2int( "wifi_sta_ssid" ):
-        continue;
-      case str2int( "automatic_updates" ):
-      case str2int( "data_push" ):
-        proposed_config[ item.key().c_str() ] = 1;
-        continue;
-        break;
-      default:
-        break;
-    }
-
-    // Sensors
-    switch ( str2int( item.key().c_str() )) {
-
-      case str2int( "has_bme" ):
-      case str2int( "has_mlx" ):
-      case str2int( "has_spl" ):
-      case str2int( "has_tsl" ):
-        proposed_config[ item.key().c_str() ] = 1;
-        break;
-      default:
-        Serial.printf( "[CONFIGMNGR] [ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
-        return false;
-    }
-  }
-
-  return true;
+	return true;
 }
