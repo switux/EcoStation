@@ -470,7 +470,7 @@ void EcoStation::LoRaWAN_process_downlink( void )
 
 	if ( debug_mode ) {
 
-		Serial.printf( "[STATION   ] [DEBUG] LoRaWAN downlink payload on port %d: [", LMIC.frame[ LMIC.dataBeg - 1 ] );
+		Serial.printf( "[STATION   ] [DEBUG] LoRaWAN downlink payload on port %d: [ ", LMIC.frame[ LMIC.dataBeg - 1 ] );
 		for ( uint8_t i = 0; i < LMIC.dataLen; i++ )
 			Serial.printf( "%02X ", LMIC.frame[ LMIC.dataBeg + i ] );
 		Serial.printf( "]\n" );
@@ -479,7 +479,7 @@ void EcoStation::LoRaWAN_process_downlink( void )
 	switch( LMIC.frame[ LMIC.dataBeg ] ) {
 
 		case SLEEP_MINUTES:
-			config.set_parameter( "sleep_minutes", static_cast<uint16_t>(( LMIC.frame[ LMIC.dataBeg + 2 ] << 8 ) + LMIC.frame[ LMIC.dataBeg + 1 ] ));
+			config.set_parameter( "sleep_minutes", static_cast<uint16_t>(( LMIC.frame[ LMIC.dataBeg + 1 ] << 8 ) + LMIC.frame[ LMIC.dataBeg + 2 ] ));
 			if ( config.save_current_configuration() )
 				msg = ( 1ULL * ACK_COMMAND ) << 56;
 			else
@@ -501,7 +501,26 @@ void EcoStation::LoRaWAN_process_downlink( void )
 			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 
+		case REBOOT:
+			reboot();
+			break;
+
+		case EMPTY_LOG:
+
+			if (( !LittleFS.begin() ) || ( !LittleFS.remove( "/backlog.txt" )))
+				msg = ( 1ULL * NACK_COMMAND ) << 56;
+			else
+				msg = ( 1ULL * ACK_COMMAND ) << 56;
+
+			msg |= ( 1ULL * EMPTY_LOG ) << 48;
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
+			break;
+
 		case SYNC_NETWORK_TIME:
+			msg = ( 1ULL * ACK_COMMAND ) << 56;
+			msg |= ( 1ULL * SYNC_NETWORK_TIME ) << 48;
+			network.request_lorawan_network_time();
+			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 
 		case FORCE_MAINTENANCE:
@@ -817,6 +836,12 @@ void EcoStation::send_data( void )
 void EcoStation::set_LoRaWAN_joined( bool b )
 {
 	network.set_LoRaWAN_joined( b );
+}
+
+void EcoStation::set_rtc_time( uint32_t utc_time )
+{
+	time_t t = static_cast<time_t>( utc_time );
+	aws_rtc.set_datetime( &t );
 }
 
 bool EcoStation::store_unsent_data( etl::string_view data )

@@ -44,11 +44,14 @@ void setup()
 
 	if ( station.on_solar_panel() ) {
 
-		uint16_t	sleep_minutes = station.get_config().get_parameter<uint16_t>( "sleep_minutes" );
 
 		station.read_sensors();
 		station.send_data();
+
+		uint16_t	sleep_minutes = station.get_config().get_parameter<uint16_t>( "sleep_minutes" );
+
 		station.prepare_for_deep_sleep( sleep_minutes * 60 );
+
 		esp_sleep_enable_timer_wakeup( sleep_minutes * 60 * 1000000 );
 		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF );
 		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON );

@@ -749,7 +749,6 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 			case str2int( "sleep_minutes" ):
 			case str2int( "spl_duration" ):
-				Serial.printf("GENERAL [%s]=[%d]\n",item.key().c_str(), item.value() );
 				continue;
 
 			default:

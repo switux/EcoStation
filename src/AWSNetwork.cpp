@@ -236,6 +236,11 @@ void AWSNetwork::queue_message( uint8_t port, uint64_t msg )
 	lorawan.queue_message( port, msg );
 }
 
+void AWSNetwork::request_lorawan_network_time( void )
+{
+	lorawan.request_network_time();
+}
+
 void AWSNetwork::send_raw_data( uint8_t *buffer, uint8_t len )
 {
 	UNSELECT_SPI_DEVICES();
