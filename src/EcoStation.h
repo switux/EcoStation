@@ -47,6 +47,8 @@ const uint8_t SPL_DURATION		= 0x02;
 const uint8_t SYNC_NETWORK_TIME	= 0x03;
 const uint8_t FORCE_MAINTENANCE	= 0x04;
 const uint8_t FORCE_OTA			= 0x05;
+const uint8_t REBOOT			= 0x06;
+const uint8_t EMPTY_LOG			= 0x07;
 const uint8_t UNKNOWN_COMMAND	= 0xFD;
 const uint8_t NACK_COMMAND		= 0xFE;
 const uint8_t ACK_COMMAND		= 0xFF;
@@ -153,6 +155,7 @@ class EcoStation {
 		void				send_alarm( const char *, const char * );
 		void				send_data( void );
 		void				set_LoRaWAN_joined( bool );
+		void				set_rtc_time( uint32_t );
 		bool				sync_time( bool );
 		void				trigger_ota_update( void );
 };

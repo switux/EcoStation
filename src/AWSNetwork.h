@@ -61,6 +61,7 @@ class AWSNetwork {
 		bool		post_content( const char *, size_t, const char * );
 		void		queue_message( uint8_t, uint64_t );
 		void		prepare_for_deep_sleep( int );
+		void		request_lorawan_network_time( void );
 		void		send_raw_data( uint8_t *, uint8_t );
 		void		set_LoRaWAN_joined( bool );
 		bool		start_hotspot( void );

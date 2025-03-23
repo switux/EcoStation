@@ -234,6 +234,7 @@ void AWSConfig::set_parameter( const char *key, T value )
 		case str2int( "sleep_minutes" ):
 		case str2int( "spl_duration" ):
 			json_config[key] = value;
+			Serial.printf( "[CONFIGMNGR] [INFO ] Set %s=%d\n", key, value );
 			break;
 
 		default:
