@@ -48,6 +48,13 @@ void os_getDevKey( u1_t* buf )
 	memcpy_P( buf, APPKEY, 16 );
 }
 
+AWSLoraWAN	*AWSLoraWAN::me = nullptr;
+
+AWSLoraWAN::AWSLoraWAN( void )
+{
+	me = this;
+}
+
 bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> appkey, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
@@ -111,7 +118,7 @@ void AWSLoraWAN::empty_queue( void )
 	memcpy( mydata.data(), &msg, 8 );
 	if ( debug_mode ) {
 
-		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes on port %d [", 8, msg_port );
+		Serial.printf( "[LORAWAN   ] [DEBUG] Queuing packet of %d bytes on port %d [ ", 8, msg_port );
 		for( int i = 0; i < 8; i++ )
 			Serial.printf( "%02x ", mydata[ i ] );
 		Serial.printf( "]\n" );
@@ -209,6 +216,39 @@ void AWSLoraWAN::queue_message( uint8_t port, uint64_t _msg )
 	msg_port = port;
 }
 
+void AWSLoraWAN::request_network_time( void )
+{
+	uint32_t	utc_time;
+
+	Serial.printf( "[LORAWAN   ] [INFO ] Requesting network time.\n" );
+	LMIC_requestNetworkTime( &AWSLoraWAN::static_request_network_time_callback, &utc_time );
+}
+
+void AWSLoraWAN::request_network_time_callback( time_t utc_time, int result )
+{
+    lmic_time_reference_t 	lmic_time_ref;
+
+	if ( result != 1 ) {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] Network time request failed.\n" );
+		return;
+	}
+
+	if ( LMIC_getNetworkTimeReference( &lmic_time_ref ) != 1 ) {
+
+		Serial.printf( "[LORAWAN   ] [INFO ] Could not get network time.\n" );
+		return;
+	}
+
+    utc_time = lmic_time_ref.tNetwork + 315964800;
+
+	Serial.printf( "[LORAWAN   ] [INFO ] Network time request, got UTC timestamp: %d\n", utc_time );
+
+    utc_time += osticks2ms( os_getTime() - lmic_time_ref.tLocal ) / 1000;;
+
+	station.set_rtc_time( utc_time );
+}
+
 void AWSLoraWAN::restore_after_deep_sleep( void )
 {
 	if ( !RTC_LMIC.seqnoUp )
@@ -254,6 +294,12 @@ void AWSLoraWAN::send_data( uint8_t *buffer, uint8_t len )
 void AWSLoraWAN::set_joined( bool b )
 {
 	joined = b;
+}
+
+void AWSLoraWAN::static_request_network_time_callback( void *_utc_time, int status )
+{
+	uint32_t	*utc_time = static_cast<uint32_t*>( _utc_time );
+	me->request_network_time_callback( *utc_time, status );
 }
 
 void onEvent( ev_t event )
