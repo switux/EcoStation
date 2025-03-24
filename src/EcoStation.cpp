@@ -209,16 +209,23 @@ void EcoStation::factory_reset( void )
 
 bool EcoStation::fixup_timestamp( void )
 {
+	aws_device_t devs = compact_data.available_sensors;
+
 	if ( !config.get_has_device( aws_device_t::RTC_DEVICE )) {
 
 		Serial.printf( "[STATION   ] [INFO ] RTC not present.\n");
+		devs &= ~aws_device_t::RTC_DEVICE;
+		compact_data.available_sensors = devs;
 		return false;
 	}
 	if ( !aws_rtc.begin() ) {
 
 		Serial.printf( "[STATION   ] [ERROR] RTC not found.\n");
+		devs &= ~aws_device_t::RTC_DEVICE;
+		compact_data.available_sensors = devs;
 		return false;
 	}
+
 	struct tm timeinfo;
 	aws_rtc.get_datetime( &timeinfo );
 	time_t now = mktime( &timeinfo );
@@ -228,6 +235,8 @@ bool EcoStation::fixup_timestamp( void )
 	strftime( d.data(), d.capacity(), "%Y-%m-%d %H:%M:%S", &timeinfo );
 	d.repair();
 	Serial.printf( "[STATION   ] [INFO ] RTC time: %s\n", d.data() );
+	devs |= aws_device_t::RTC_DEVICE;
+	compact_data.available_sensors = devs;
 	return true;
 }
 
@@ -847,13 +856,16 @@ void EcoStation::set_rtc_time( uint32_t utc_time )
 
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
-	bool ok;
+	bool			ok;
+	aws_device_t	devs = compact_data.available_sensors;
 
 	UNSELECT_SPI_DEVICES();
 
 	if ( !SD.begin( GPIO_SD_CS ) ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
+		devs &= ~aws_device_t::SDCARD_DEVICE;
+		compact_data.available_sensors = devs;
 		return false;
 	}
 
@@ -861,6 +873,8 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 	if ( !backlog ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot store data.\n" );
+		devs &= ~aws_device_t::SDCARD_DEVICE;
+		compact_data.available_sensors = devs;
 		return false;
 	}
 
@@ -869,9 +883,14 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Data stored: [%s]\n", data.data() );
 
+		devs |= aws_device_t::SDCARD_DEVICE;
+		compact_data.available_sensors = devs;
+
 	} else {
 
 		Serial.printf( "[STATION   ] [ERROR] Could not store data.\n" );
+		devs &= ~aws_device_t::SDCARD_DEVICE;
+		compact_data.available_sensors = devs;
 	}
 
 	backlog.close();
