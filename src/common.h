@@ -160,7 +160,7 @@ struct compact_data_t {
 	uint32_t		uptime;
 	uint32_t		fs_free_space;
 
-	int				reset_reason;
+	uint32_t		reset_reason;
 	uint32_t		build_info;
 	uint16_t		sleep_minutes;
 } __attribute__ ((packed));
