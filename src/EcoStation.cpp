@@ -818,12 +818,13 @@ void EcoStation::send_data( void )
 		Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
 	sensor_manager.encode_sensor_data();
 
+	store_unsent_data( etl::string_view( json_sensor_data ));
+
 	if ( config.get_has_device( aws_device_t::LORAWAN_DEVICE ) )
 		network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
 	else
 		network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() );
 
-	store_unsent_data( etl::string_view( json_sensor_data ));
 
 	network.empty_queue();
 
@@ -840,7 +841,7 @@ void EcoStation::set_LoRaWAN_joined( bool b )
 
 void EcoStation::set_rtc_time( uint32_t utc_time )
 {
-	time_t t = static_cast<time_t>( utc_time );
+	auto t = static_cast<time_t>( utc_time );
 	aws_rtc.set_datetime( &t );
 }
 
@@ -868,9 +869,10 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Data stored: [%s]\n", data.data() );
 
-	} else
+	} else {
 
 		Serial.printf( "[STATION   ] [ERROR] Could not store data.\n" );
+	}
 
 	backlog.close();
 	return ok;

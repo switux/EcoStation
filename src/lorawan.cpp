@@ -296,9 +296,9 @@ void AWSLoraWAN::set_joined( bool b )
 	joined = b;
 }
 
-void AWSLoraWAN::static_request_network_time_callback( void *_utc_time, int status )
+void AWSLoraWAN::static_request_network_time_callback( void *_utc_time, int status ) // NOSONAR
 {
-	uint32_t	*utc_time = static_cast<uint32_t*>( _utc_time );
+	auto *utc_time = static_cast<uint32_t*>( _utc_time );
 	me->request_network_time_callback( *utc_time, status );
 }
 

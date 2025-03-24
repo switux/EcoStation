@@ -145,7 +145,7 @@ class AWSConfig {
 		void				set_missing_network_parameters_to_default_values( void );
 		void				set_missing_parameters_to_default_values( void );
 		void				set_root_ca( JsonVariant & );
-		void				to_hex_array( const char*, uint8_t *, bool );
+		void				to_hex_array( size_t, const char*, uint8_t *, bool );
 		void				update_fs_free_space( void );
 		bool				verify_entries( JsonVariant & );
 };

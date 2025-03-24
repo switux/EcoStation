@@ -1,6 +1,6 @@
-/*	
+ /*
   	defaults.h
-  	
+
 	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -84,5 +84,7 @@ static const char  DEFAULT_ROOT_CA[] =
 "mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d\n"
 "emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=\n"
 "-----END CERTIFICATE-----\n";
+
+constexpr size_t DEFAULT_ROOT_CA_LEN = sizeof( DEFAULT_ROOT_CA ) - 1;
 
 #endif
