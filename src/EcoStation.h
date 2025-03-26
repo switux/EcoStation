@@ -1,7 +1,7 @@
 /*
   	EcoStation.h
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -43,7 +43,7 @@ const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
 const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
 const uint8_t SLEEP_MINUTES		= 0x01;
-const uint8_t SPL_DURATION		= 0x02;
+const uint8_t SPL_CONFIG		= 0x02;
 const uint8_t SYNC_NETWORK_TIME	= 0x03;
 const uint8_t FORCE_MAINTENANCE	= 0x04;
 const uint8_t FORCE_OTA			= 0x05;

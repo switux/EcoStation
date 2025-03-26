@@ -1,7 +1,7 @@
 /*
   	lorawan.cpp
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -212,7 +212,7 @@ void AWSLoraWAN::process_downlink( void )
 void AWSLoraWAN::queue_message( uint8_t port, uint64_t _msg )
 {
 	msg = _msg;
-	msg_waiting = true;
+	msg_waiting++;
 	msg_port = port;
 }
 

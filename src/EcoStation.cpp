@@ -1,7 +1,7 @@
 /*
 	EcoStation.cpp
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -214,15 +214,13 @@ bool EcoStation::fixup_timestamp( void )
 	if ( !config.get_has_device( aws_device_t::RTC_DEVICE )) {
 
 		Serial.printf( "[STATION   ] [INFO ] RTC not present.\n");
-		devs &= ~aws_device_t::RTC_DEVICE;
-		compact_data.available_sensors = devs;
+		sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, false );
 		return false;
 	}
 	if ( !aws_rtc.begin() ) {
 
 		Serial.printf( "[STATION   ] [ERROR] RTC not found.\n");
-		devs &= ~aws_device_t::RTC_DEVICE;
-		compact_data.available_sensors = devs;
+		sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, false );
 		return false;
 	}
 
@@ -235,8 +233,7 @@ bool EcoStation::fixup_timestamp( void )
 	strftime( d.data(), d.capacity(), "%Y-%m-%d %H:%M:%S", &timeinfo );
 	d.repair();
 	Serial.printf( "[STATION   ] [INFO ] RTC time: %s\n", d.data() );
-	devs |= aws_device_t::RTC_DEVICE;
-	compact_data.available_sensors = devs;
+		sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, true );
 	return true;
 }
 
@@ -432,7 +429,7 @@ bool EcoStation::initialise( void )
 		sync_time( true );
 		fixup_timestamp();
 	}
-	
+
 	if ( ota_update_ongoing ) {
 
 		Serial.printf( "[STATION   ] [INFO ] Expected OTA firmware sha256 is [%s]\n", config.get_ota_sha256().data() );
@@ -499,14 +496,16 @@ void EcoStation::LoRaWAN_process_downlink( void )
 			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 
-		case SPL_DURATION:
-			config.set_parameter( "spl_duration", LMIC.frame[ LMIC.dataBeg + 1 ] );
+		case SPL_CONFIG:
+			config.set_parameter( "spl_mode", LMIC.frame[ LMIC.dataBeg + 1 ] );
+			config.set_parameter( "spl_duration", LMIC.frame[ LMIC.dataBeg + 2 ] );
 			if ( config.save_current_configuration() )
 				msg = ( 1ULL * ACK_COMMAND ) << 56;
 			else
 				msg = ( 1ULL * NACK_COMMAND ) << 56;
-			msg |= ( 1ULL * SPL_DURATION ) << 48;
+			msg |= ( 1ULL * SPL_CONFIG ) << 48;
 			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 1 ] ) << 40;
+			msg |= ( 1ULL * LMIC.frame[ LMIC.dataBeg + 2 ] ) << 32;
 			network.queue_message( LMIC.frame[ LMIC.dataBeg - 1 ], msg );
 			break;
 
@@ -612,7 +611,7 @@ bool EcoStation::poll_sensors( void )
 
 void EcoStation::prepare_for_deep_sleep( int deep_sleep_secs )
 {
-	network.prepare_for_deep_sleep( deep_sleep_secs );	
+	network.prepare_for_deep_sleep( deep_sleep_secs );
 }
 
 template void EcoStation::print_config_string<>( const char *fmt );
@@ -640,7 +639,7 @@ void EcoStation::print_runtime_config( void )
 	std::array<char, 116>	string;
 	const char			*root_ca = config.get_root_ca().data();
 	int					ca_pos = 0;
-	    
+
 	if ( config.get_has_device( aws_device_t::LORAWAN_DEVICE ) ) {
 
 		print_config_string( "# LoRaWAN APPKEY : %s", config.get_lora_appkey_str().data() );
@@ -825,9 +824,9 @@ void EcoStation::send_data( void )
 	get_json_sensor_data();
 	if ( debug_mode )
 		Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
-	sensor_manager.encode_sensor_data();
 
 	store_unsent_data( etl::string_view( json_sensor_data ));
+	sensor_manager.encode_sensor_data();
 
 	if ( config.get_has_device( aws_device_t::LORAWAN_DEVICE ) )
 		network.send_raw_data( reinterpret_cast<uint8_t *>( &compact_data ), sizeof( compact_data_t ) );
@@ -864,8 +863,7 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 	if ( !SD.begin( GPIO_SD_CS ) ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot open SDCard.\n" );
-		devs &= ~aws_device_t::SDCARD_DEVICE;
-		compact_data.available_sensors = devs;
+		sensor_manager.update_available_sensors( aws_device_t::SDCARD_DEVICE, false );
 		return false;
 	}
 
@@ -873,8 +871,7 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 	if ( !backlog ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Cannot store data.\n" );
-		devs &= ~aws_device_t::SDCARD_DEVICE;
-		compact_data.available_sensors = devs;
+		sensor_manager.update_available_sensors( aws_device_t::SDCARD_DEVICE, false );
 		return false;
 	}
 
@@ -883,8 +880,7 @@ bool EcoStation::store_unsent_data( etl::string_view data )
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Data stored: [%s]\n", data.data() );
 
-		devs |= aws_device_t::SDCARD_DEVICE;
-		compact_data.available_sensors = devs;
+		sensor_manager.update_available_sensors( aws_device_t::SDCARD_DEVICE, true );
 
 	} else {
 

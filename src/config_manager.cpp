@@ -335,7 +335,7 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
 			lorawan = ( c == 1 );
 
 		if ( lorawan ) {
- 
+
 			if ( !nvs.getBytes( "lorawan_deveui", lora_eui.data(), 8 )) {
 
 				Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN DEVEUI from NVS. Please contact support.\n" );
@@ -675,6 +675,12 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 
 	if ( !json_config["sleep_minutes"].is<JsonVariant>( ))
 		json_config["sleep_minutes"] = DEFAULT_SLEEP_MINUTES;
+
+	if ( !json_config["spl_duration"].is<JsonVariant>( ))
+		json_config["spl_duration"] = DEFAULT_SPL_DURATION;
+
+	if ( !json_config["spl_mode"].is<JsonVariant>( ))
+		json_config["spl_mode"] = DEFAULT_SPL_MODE;
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
@@ -746,6 +752,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 			case str2int( "sleep_minutes" ):
 			case str2int( "spl_duration" ):
+			case str2int( "spl_mode" ):
 				continue;
 
 			default:

@@ -1,7 +1,7 @@
 /*
   	sensor_manager.h
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -56,7 +56,6 @@ class AWSSensorManager {
 		std::array<int,7>	k;
 		AWSConfig 			*config	= nullptr;
 
-		aws_device_t			available_sensors	= aws_device_t::NO_SENSOR;
 		compact_data_t			*compact_data		= nullptr;
 		sensor_data_t			sensor_data;
 		bool					debug_mode			= false;
@@ -81,6 +80,7 @@ class AWSSensorManager {
 		void					read_sensors( void );
 		void					resume( void );
 		bool					sensor_is_available( aws_device_t );
+		void					update_available_sensors( aws_device_t, bool );
 		void					set_debug_mode( bool );
 		void					set_solar_panel( bool );
 		void					encode_sensor_data( void );

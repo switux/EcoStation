@@ -1,7 +1,7 @@
 /*
   	AWSOTA.cpp
 
-	(c) 2024 F.Lesage and inspired from ESP32-OTA-Pull by M.Hart
+	(c) 2024-2025 F.Lesage and inspired from ESP32-OTA-Pull by M.Hart
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
