@@ -20,7 +20,7 @@ bool dbmeter::begin( uint8_t _int_mode, uint8_t seconds )
 		case 1:
 			wait_ms += 2000;
 			write_register( static_cast<uint8_t>( spl_hw_t::DBM_REG_TAVGH ), ( wait_ms >> 8 ) & 0x0F );
-			write_register( static_cast<uint8_t>( spl_hw_t::DBM_REG_TAVGL ), ( wait_ms ) & 0x0F );
+			write_register( static_cast<uint8_t>( spl_hw_t::DBM_REG_TAVGL ), wait_ms & 0x0F );
 			break;
 
 		case 2:
