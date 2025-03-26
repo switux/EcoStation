@@ -212,7 +212,7 @@ void AWSLoraWAN::process_downlink( void )
 void AWSLoraWAN::queue_message( uint8_t port, uint64_t _msg )
 {
 	msg = _msg;
-	msg_waiting++;
+	msg_waiting = true;
 	msg_port = port;
 }
 
@@ -298,7 +298,7 @@ void AWSLoraWAN::set_joined( bool b )
 
 void AWSLoraWAN::static_request_network_time_callback( void *_utc_time, int status ) // NOSONAR
 {
-	auto *utc_time = static_cast<uint32_t*>( _utc_time );
+	const auto *utc_time = static_cast<const uint32_t*>( _utc_time );
 	me->request_network_time_callback( *utc_time, status );
 }
 
