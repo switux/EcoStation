@@ -1,7 +1,7 @@
 /*
 	common.h
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -160,7 +160,7 @@ struct compact_data_t {
 	uint32_t		uptime;
 	uint32_t		fs_free_space;
 
-	int				reset_reason;
+	uint32_t		reset_reason;
 	uint32_t		build_info;
 	uint16_t		sleep_minutes;
 } __attribute__ ((packed));

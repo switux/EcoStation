@@ -335,7 +335,7 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
 			lorawan = ( c == 1 );
 
 		if ( lorawan ) {
- 
+
 			if ( !nvs.getBytes( "lorawan_deveui", lora_eui.data(), 8 )) {
 
 				Serial.printf( "[CONFIGMNGR] [PANIC] Could not get LoRaWAN DEVEUI from NVS. Please contact support.\n" );
@@ -362,8 +362,8 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
 
 		if ( lorawan ) {
 
-			to_hex_array( eeprom_config["lorawan_deveui"], lora_eui.data(), true );
-			to_hex_array( eeprom_config["lorawan_appkey"], lora_appkey.data(), false );
+			to_hex_array( eeprom_config["lorawan_deveui"].as<String>().length(), eeprom_config["lorawan_deveui"], lora_eui.data(), true );
+			to_hex_array( eeprom_config["lorawan_appkey"].as<String>().length(), eeprom_config["lorawan_appkey"], lora_appkey.data(), false );
 		}
 
 	}
@@ -386,9 +386,8 @@ void AWSConfig::read_root_ca( void )
 	if ( !file ) {
 
 		Serial.printf( "[CONFIGMNGR] [ERROR] Cannot read ROOT CA file. Using default CA.\n");
-		s = strlen( DEFAULT_ROOT_CA );
-		if ( s > root_ca.capacity() )
-			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+		if ( DEFAULT_ROOT_CA_LEN > root_ca.capacity() )
+			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", DEFAULT_ROOT_CA_LEN, root_ca.capacity() );
 		else
 			root_ca.assign( DEFAULT_ROOT_CA );
 		return;
@@ -398,9 +397,8 @@ void AWSConfig::read_root_ca( void )
 
 		if ( debug_mode )
 			Serial.printf( "[CONFIGMNGR] [DEBUG] Empty ROOT CA file. Using default CA.\n" );
-		s = strlen( DEFAULT_ROOT_CA );
-		if ( s > root_ca.capacity() )
-			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+		if ( DEFAULT_ROOT_CA_LEN > root_ca.capacity() )
+			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", DEFAULT_ROOT_CA_LEN, root_ca.capacity() );
 		else
 			root_ca.assign( DEFAULT_ROOT_CA );
 		return;
@@ -409,8 +407,7 @@ void AWSConfig::read_root_ca( void )
 	if ( s > root_ca.capacity() ) {
 
 		Serial.printf( "[CONFIGMNGR] [ERROR] ROOT CA file is too big. Using default CA.\n" );
-		s = strlen( DEFAULT_ROOT_CA );
-		if ( s > root_ca.capacity() )
+		if ( DEFAULT_ROOT_CA_LEN > root_ca.capacity() )
 			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
 		else
 			root_ca.assign( DEFAULT_ROOT_CA );
@@ -678,6 +675,12 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 
 	if ( !json_config["sleep_minutes"].is<JsonVariant>( ))
 		json_config["sleep_minutes"] = DEFAULT_SLEEP_MINUTES;
+
+	if ( !json_config["spl_duration"].is<JsonVariant>( ))
+		json_config["spl_duration"] = DEFAULT_SPL_DURATION;
+
+	if ( !json_config["spl_mode"].is<JsonVariant>( ))
+		json_config["spl_mode"] = DEFAULT_SPL_MODE;
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
@@ -695,9 +698,9 @@ void AWSConfig::set_root_ca( JsonVariant &_json_config )
 	root_ca.empty();
 }
 
-void AWSConfig::to_hex_array( const char* s, uint8_t *tmp, bool reverse )
+void AWSConfig::to_hex_array( size_t len, const char* s, uint8_t *tmp, bool reverse )
 {
-	int i = reverse ? ( strlen( s ) / 2 ) - 1 : 0;
+	int i = reverse ? ( len / 2 ) - 1 : 0;
 	int j = reverse ? -1 : 1;
 
 	while ( *s && s[ 1 ] ) {
@@ -749,6 +752,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 			case str2int( "sleep_minutes" ):
 			case str2int( "spl_duration" ):
+			case str2int( "spl_mode" ):
 				continue;
 
 			default:

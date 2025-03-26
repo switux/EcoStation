@@ -1,7 +1,7 @@
 /*	
 	EcoStation.ino
 
-	(c) 2024 F.Lesage
+	(c) 2024-2025 F.Lesage
 
 	1.0.0 - Initial version.
 	
