@@ -308,11 +308,6 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 	return etl::string_view( json_sensor_data );
 }
 
-sensor_data_t *EcoStation::get_sensor_data( void )
-{
-	return sensor_manager.get_sensor_data();
-}
-
 uint32_t EcoStation::get_uptime( void )
 {
 	if ( !on_solar_panel() )
@@ -453,11 +448,6 @@ bool EcoStation::initialise( void )
 
 	ready = true;
 	return true;
-}
-
-void EcoStation::initialise_sensors( void )
-{
-	sensor_manager.initialise_sensors();
 }
 
 bool EcoStation::is_ready( void )
@@ -602,11 +592,6 @@ void EcoStation::periodic_tasks( void *dummy )	// NOSONAR
 
 		delay( 500 );
 	}
-}
-
-bool EcoStation::poll_sensors( void )
-{
-	return sensor_manager.poll_sensors();
 }
 
 void EcoStation::prepare_for_deep_sleep( int deep_sleep_secs )

@@ -74,7 +74,7 @@ enum struct boot_mode : uint8_t
 {
 	NORMAL,
 	MAINTENANCE,
-	FACTORY_RESET	
+	FACTORY_RESET
 };
 using aws_boot_mode_t = boot_mode;
 
@@ -97,7 +97,7 @@ class EcoStation {
 
 		TaskHandle_t				aws_periodic_task_handle;
 		AWSRTC						aws_rtc;
-		
+
 		aws_boot_mode_t				boot_mode					= aws_boot_mode_t::NORMAL;
 		compact_data_t				compact_data;
 		AWSConfig					config;
@@ -138,16 +138,13 @@ class EcoStation {
 		bool				activate_sensors( void );
 		void				check_ota_updates( bool );
 		AWSConfig			&get_config( void );
-		sensor_data_t		*get_sensor_data( void );
 		etl::string_view	get_json_sensor_data( void );
 		uint32_t			get_uptime( void );
 		bool				initialise( void );
-		void				initialise_sensors( void );
 		bool				is_ready( void );
 		void				LoRaWAN_message_sent( void );
 		void				LoRaWAN_process_downlink( void );
 		bool				on_solar_panel();
-		bool				poll_sensors( void );
 		void				prepare_for_deep_sleep( int );
 		void				reboot( void );
 		void				read_sensors( void );
