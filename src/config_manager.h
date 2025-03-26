@@ -1,7 +1,7 @@
 /*
 	config_manager.h
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -73,6 +73,9 @@ const int				DEFAULT_CC_AWS_OVERCAST					= -20;
 const int				DEFAULT_CC_AWS_CLOUDY					= -25;
 const int				DEFAULT_CC_AAG_OVERCAST					= -15;
 const int				DEFAULT_CC_AAG_CLOUDY					= -20;
+
+const uint8_t			DEFAULT_SPL_MODE						= 0;
+const uint8_t			DEFAULT_SPL_DURATION					= 0;
 
 const aws_wifi_mode		DEFAULT_WIFI_MODE						= aws_wifi_mode::both;
 const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE				= aws_ip_mode::dhcp;
@@ -203,6 +206,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "remote_server" ):
 		case str2int( "sleep_minutes" ):
 		case str2int( "spl_duration" ):
+		case str2int( "spl_mode" ):
 		case str2int( "tzname" ):
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):
@@ -233,6 +237,7 @@ void AWSConfig::set_parameter( const char *key, T value )
 
 		case str2int( "sleep_minutes" ):
 		case str2int( "spl_duration" ):
+		case str2int( "spl_mode" ):
 			json_config[key] = value;
 			Serial.printf( "[CONFIGMNGR] [INFO ] Set %s=%d\n", key, value );
 			break;

@@ -1,7 +1,7 @@
 /*
   	AWSSensorManager.cpp
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -89,6 +89,8 @@ AWSSensorManager::AWSSensorManager( void ) :
 	tsl ( 2591 )
 {
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
+	sensor_data.available_sensors	= aws_device_t::NO_SENSOR;
+
 }
 
 int16_t AWSSensorManager::float_to_int16_encode( float v, float min, float max )
@@ -113,7 +115,7 @@ int32_t AWSSensorManager::float_to_int32_encode( float v, float min, float max )
 
 aws_device_t AWSSensorManager::get_available_sensors( void )
 {
-	return available_sensors;
+	return sensor_data.available_sensors;
 }
 
 bool AWSSensorManager::get_debug_mode( void )
@@ -162,7 +164,10 @@ bool AWSSensorManager::initialise( AWSConfig *_config, compact_data_t *_compact_
 
 void AWSSensorManager::initialise_dbmeter( void )
 {
-	if ( !spl.begin() )
+	uint8_t seconds = config->get_parameter<uint8_t>( "spl_duration" );
+	uint8_t spl_mode = config->get_parameter<uint8_t>( "spl_mode" );
+
+	if ( !spl.begin( spl_mode, seconds ) )
 		Serial.printf( "[SENSORMNGR] [ERROR] Could not find DBMETER.\n" );
 
 	else {
@@ -170,7 +175,7 @@ void AWSSensorManager::initialise_dbmeter( void )
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [INFO ] Found DBMETER.\n" );
 
-		available_sensors |= aws_device_t::SPL_SENSOR;
+		sensor_data.available_sensors |= aws_device_t::SPL_SENSOR;
 	}
 }
 
@@ -185,7 +190,7 @@ void AWSSensorManager::initialise_BME( void )
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [INFO ] Found BME280.\n" );
 
-		available_sensors |= aws_device_t::BME_SENSOR;
+		sensor_data.available_sensors |= aws_device_t::BME_SENSOR;
 	}
 }
 
@@ -200,7 +205,7 @@ void AWSSensorManager::initialise_MLX( void )
 		if ( debug_mode )
 			Serial.printf( "[SENSORMNGR] [INFO ] Found MLX90614.\n" );
 
-		available_sensors |= aws_device_t::MLX_SENSOR;
+		sensor_data.available_sensors |= aws_device_t::MLX_SENSOR;
 	}
 }
 
@@ -235,7 +240,7 @@ void AWSSensorManager::initialise_TSL( void )
 
 		tsl.setGain( TSL2591_GAIN_LOW );
 		tsl.setTiming( TSL2591_INTEGRATIONTIME_100MS );
-		available_sensors |= aws_device_t::TSL_SENSOR;
+		sensor_data.available_sensors |= aws_device_t::TSL_SENSOR;
 	}
 }
 
@@ -258,7 +263,6 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
-			sensor_data.available_sensors = available_sensors;
 		}
 		delay( polling_ms_interval );
 	}
@@ -266,7 +270,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 
 void AWSSensorManager::read_dbmeter( void  )
 {
-	if ( ( available_sensors & aws_device_t::SPL_SENSOR ) == aws_device_t::SPL_SENSOR ) {
+	if ( ( sensor_data.available_sensors & aws_device_t::SPL_SENSOR ) == aws_device_t::SPL_SENSOR ) {
 
 		sensor_data.db = spl.read();
 		if ( debug_mode )
@@ -278,7 +282,7 @@ void AWSSensorManager::read_dbmeter( void  )
 
 void AWSSensorManager::read_BME( void  )
 {
-	if ( ( available_sensors & aws_device_t::BME_SENSOR ) == aws_device_t::BME_SENSOR ) {
+	if ( ( sensor_data.available_sensors & aws_device_t::BME_SENSOR ) == aws_device_t::BME_SENSOR ) {
 
 		sensor_data.weather.temperature = bme.readTemperature();
 		sensor_data.weather.pressure = bme.readPressure() / 100.F;
@@ -309,7 +313,7 @@ void AWSSensorManager::read_BME( void  )
 
 void AWSSensorManager::read_MLX( void )
 {
-	if ( ( available_sensors & aws_device_t::MLX_SENSOR ) == aws_device_t::MLX_SENSOR ) {
+	if ( ( sensor_data.available_sensors & aws_device_t::MLX_SENSOR ) == aws_device_t::MLX_SENSOR ) {
 
 		sensor_data.weather.ambient_temperature = mlx.readAmbientTempC();
 		sensor_data.weather.sky_temperature = mlx.readObjectTempC();
@@ -359,9 +363,9 @@ void AWSSensorManager::read_sensors( void )
 {
 	retrieve_sensor_data();
 
-	if ( prev_available_sensors != available_sensors ) {
+	if ( prev_available_sensors != sensor_data.available_sensors ) {
 
-		prev_available_sensors = static_cast<unsigned long>( available_sensors );
+		prev_available_sensors = static_cast<unsigned long>( sensor_data.available_sensors );
 		station.report_unavailable_sensors();
 	}
 }
@@ -370,7 +374,7 @@ void AWSSensorManager::read_TSL( void )
 {
 	int			lux = -1;
 
-	if ( ( available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR ) {
+	if ( ( sensor_data.available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR ) {
 
 		uint32_t lum = tsl.getFullLuminosity();
 		uint16_t ir = lum >> 16;
@@ -433,7 +437,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		if ( config->get_has_device( aws_device_t::TSL_SENSOR ) ) {
 
 			read_TSL();
-			if ( ( available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR )
+			if ( ( sensor_data.available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR )
 				sqm.read( sensor_data.weather.ambient_temperature );
 		}
 
@@ -445,7 +449,6 @@ void AWSSensorManager::retrieve_sensor_data( void )
 
 		xSemaphoreGive( i2c_mutex );
 
-		sensor_data.available_sensors = available_sensors;
 	}
 }
 
@@ -474,11 +477,19 @@ void AWSSensorManager::resume( void )
 
 bool AWSSensorManager::sensor_is_available( aws_device_t sensor )
 {
-	return (( available_sensors & sensor ) == sensor );
+	return (( sensor_data.available_sensors & sensor ) == sensor );
 }
 
 void AWSSensorManager::suspend( void )
 {
 	if ( initialised )
 		vTaskSuspend( sensors_task_handle );
+}
+
+void AWSSensorManager::update_available_sensors( aws_device_t dev, bool is_available )
+{
+	if ( is_available )
+		sensor_data.available_sensors |= dev;
+	else
+		sensor_data.available_sensors &= ~dev;
 }

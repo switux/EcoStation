@@ -1,7 +1,7 @@
 /*
   	dbmeter.h
 
-	(c) 2024 F.Lesage
+	(c) 2024-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@ enum struct spl_hw_t : uint8_t {
 	DBM_REG_FREQ_16BINS_15	= 0xC7 };
 
 struct dbm_control_t {
-	
+
 	uint8_t	reserved			: 3;
 	uint8_t interrupt_type		: 1;
 	uint8_t interrupt_enabled	: 1;
@@ -57,9 +57,11 @@ class dbmeter {
 
 	private:
 
-		bool					i2c_ok;
-		uint8_t					version;
 		std::array<uint8_t,4>	device_id;
+		bool					i2c_ok;
+		uint8_t					int_mode;
+		uint8_t					version;
+		uint16_t				wait_ms;
 
 		bool		get_device_id( void );
 		bool		get_version( void );
@@ -68,7 +70,7 @@ class dbmeter {
 
 	public:
 
-		bool	begin( void );
+		bool	begin( uint8_t, uint8_t );
 		uint8_t read( void );
 };
 
