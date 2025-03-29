@@ -54,7 +54,7 @@ IPAddress AWSNetwork::cidr_to_mask( byte cidr )
 
 bool AWSNetwork::connect_to_wifi()
 {
-	uint8_t		remaining_attempts	= 5;
+	uint8_t		remaining_attempts	= 10;
 	char		*ip = nullptr;
 	char		*cidr = nullptr;
 	const char	*ssid		= config->get_parameter<const char *>( "wifi_sta_ssid" );

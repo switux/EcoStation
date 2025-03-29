@@ -96,6 +96,7 @@ class EcoStation {
 	private:
 
 		TaskHandle_t				aws_periodic_task_handle;
+		TaskHandle_t				ota_task_handle;
 		AWSRTC						aws_rtc;
 
 		aws_boot_mode_t				boot_mode					= aws_boot_mode_t::NORMAL;
@@ -123,6 +124,7 @@ class EcoStation {
 		bool			fixup_timestamp( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
+		void 			ota_task( void *dummy );
 		void			periodic_tasks( void * );
 		bool			post_content( const char *, const char * );
 		template<typename... Args>
@@ -130,6 +132,7 @@ class EcoStation {
 		void			print_runtime_config( void );
 		void			read_battery_level( void );
 		int				reformat_ca_root_line( std::array<char,116> &, int, int, int, const char * );
+		void			start_ota_task( void );
 		bool			store_unsent_data( etl::string_view );
 
 	public:

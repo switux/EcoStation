@@ -82,7 +82,7 @@ const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE				= aws_ip_mode::dhcp;
 
 const bool				DEFAULT_DATA_PUSH						= true;
 const uint16_t			DEFAULT_PUSH_FREQ						= 300;
-
+const bool				DEFAULT_CHECK_CERTIFICATE				= false;
 const char				DEFAULT_OTA_URL[]						= "https://www.datamancers.net/images/AWS.json";
 
 class AWSConfig {
@@ -198,6 +198,7 @@ T AWSConfig::get_parameter( const char *key )
 			return ( json_config[key].is<JsonVariant>() ? json_config[key].as<T>() : 0 );	// NOSONAR
 
 		case str2int( "automatic_updates" ):
+		case str2int( "check_certificate" ):
 		case str2int( "data_push" ):
 		case str2int( "msas_calibration_offset" ):
 		case str2int( "ota_url" ):

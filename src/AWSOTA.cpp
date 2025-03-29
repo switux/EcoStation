@@ -33,9 +33,10 @@
 extern bool	ota_update_ongoing;			// NOSONAR
 extern EcoStation	station;
 
-ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY) {
+ota_status_t AWSOTA::check_for_update( const char *url, bool _check_cert, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY) {
 
 	ota_status_t ota_status;
+	check_certificate = _check_cert;
 
 	if ( !download_json( url, root_ca )) {
 
@@ -51,9 +52,9 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 
 	for (auto ota_config : json_ota_config["Configurations"].as<JsonArray>()) {
 
-		if (is_profile_match(ota_config, current_version)) {
+		if (is_profile_match( ota_config, current_version )) {
 
-			ota_status = handle_action(ota_config, root_ca, action);
+			ota_status = handle_action( ota_config, root_ca, action );
 			break;
 		}
     }
@@ -98,7 +99,7 @@ ota_status_t AWSOTA::handle_action( const JsonObject &ota_config, const char *ro
     if ( action == ota_action_t::UPDATE_AND_BOOT ) {
 
 		ota_update_ongoing = true;
-		save_firmware_sha256(ota_config["SHA256"].as<const char *>());
+		save_firmware_sha256( ota_config["SHA256"].as<const char *>() );
 	}
 
 	if ( !do_ota_update( ota_config["URL"], root_ca, action ))
@@ -110,9 +111,20 @@ ota_status_t AWSOTA::handle_action( const JsonObject &ota_config, const char *ro
 
 bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t action )
 {
-	HTTPClient	http;
+	HTTPClient			http;
+	WiFiClientSecure	client;
+	bool				b;
 	
-	if ( !http.begin( url, root_ca )) {
+	if ( !check_certificate ) {
+
+		client.setInsecure();
+		b = http.begin( client, url );
+
+	} else
+
+		b = http.begin( url, root_ca );
+
+	if ( !b ) {
 
 		status_code = ota_status_t::HTTP_FAILED;
 		return false;
@@ -128,6 +140,7 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 	}
 
 	int total_length = http.getSize();
+	Serial.printf( "[OTA       ] [INFO ] Downloading new firmware from %s (size = %d bytes)\n", url, total_length );
 
 	if ( !Update.begin( UPDATE_SIZE_UNKNOWN )) {
 
@@ -167,12 +180,15 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 
 		Update.end( true );
 		esp_task_wdt_reset();
+		Serial.printf( "[OTA       ] [INFO ] New firmware loaded! " );
 		delay( 1000 );
 		if ( action == ota_action_t::UPDATE_ONLY ) {
 
 			status_code = ota_status_t::UPDATE_OK;
+			Serial.printf( "Resuming execution.\n" );
 			return true;
 		}
+		Serial.printf( "Rebooting.\n" );
 		ESP.restart();
 	}
 	
@@ -182,9 +198,20 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 
 bool AWSOTA::download_json( const char *url, const char *root_ca )
 {
-	HTTPClient	http;
+	HTTPClient			http;
+	WiFiClientSecure 	client;
+	bool				b;
 
-	if ( !http.begin( url, root_ca )) {
+	if ( !check_certificate ) {
+
+		client.setInsecure();
+		b = http.begin( client, url );
+
+	} else
+
+		b = http.begin( url, root_ca );
+
+	if ( !b ) {
 
 		status_code = ota_status_t::HTTP_FAILED;
 		return false;
@@ -241,7 +268,6 @@ void AWSOTA::save_firmware_sha256( const char *sha256 )
 	if ( !nvs.begin( "firmware", false )) {
 
 		Serial.printf( "[OTA       ] [ERROR] Could not open firmware NVS.\n" );
-		station.send_alarm( "[Station] OTA NVS", "Could not open firmware NVS to save sha256" );
 		return;
 	}
 
@@ -253,7 +279,6 @@ void AWSOTA::save_firmware_sha256( const char *sha256 )
 
 	nvs.end();
 	Serial.printf( "[OTA       ] [ERROR] Could not save firmware SHA256 on NVS.\n" );
-	station.send_alarm( "[Station] OTA NVS", "Could not save firmware SHA256 on NVS" );
 }
 
 void AWSOTA::set_aws_board_id( etl::string<24> &board )

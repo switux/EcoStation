@@ -93,7 +93,11 @@ void EcoStation::check_ota_updates( bool force_update = false )
 	ota.set_progress_callback( OTA_callback );
 	time( &ota_setup.last_update_ts );
 
-	ota_setup.status_code = ota.check_for_update( config.get_parameter<const char *>( "ota_url" ), config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
+	ota_setup.status_code = ota.check_for_update( 	config.get_parameter<const char *>( "ota_url" ),
+													config.get_parameter<bool>( "check_certificate" ),
+													config.get_root_ca().data(),
+													ota_setup.version,
+													force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
 	ota_update_ongoing = false;
 }
 
@@ -540,6 +544,24 @@ bool EcoStation::on_solar_panel( void )
 	return solar_panel;
 }
 
+void EcoStation::ota_task( void *dummy )
+{
+	unsigned long	ota_millis	= 0;
+	unsigned long	ota_timer	= 30 * 60 * 1000;
+
+	while ( true ) {
+
+		if ( force_ota_update || (( millis() - ota_millis ) > ota_timer )) {
+
+			force_ota_update = false;
+			check_ota_updates( true );
+			ota_millis = millis();
+		}
+
+		delay( 500 );
+	}
+}
+
 void OTA_callback( int offset, int total_length )
 {
 	static float	percentage = 0.F;
@@ -548,7 +570,7 @@ void OTA_callback( int offset, int total_length )
 	if ( p - percentage > 10.F ) {
 
 		esp_task_wdt_reset();
-		Serial.printf("[STATION   ] [INFO ] Updating %d of %d (%02d%%)...\n", offset, total_length, 100 * offset / total_length );
+		Serial.printf("[STATION   ] [INFO ] Downloaded %d of %d (%02d%%)...\n", offset, total_length, 100 * offset / total_length );
 		percentage = p;
 	}
 	esp_task_wdt_reset();
@@ -838,6 +860,17 @@ void EcoStation::set_rtc_time( uint32_t utc_time )
 	aws_rtc.set_datetime( &t );
 }
 
+void EcoStation::start_ota_task( void )
+{
+	std::function<void(void *)> _ota_task = std::bind( &EcoStation::ota_task, this, std::placeholders::_1 );
+	xTaskCreatePinnedToCore(
+		[](void *param) {	// NOSONAR
+			std::function<void(void*)>* ota_task_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
+			(*ota_task_proxy)( NULL );
+		}, "AWSCoreTask", 10000, &_ota_task, 5, &ota_task_handle, 1 );
+
+}
+
 bool EcoStation::store_unsent_data( etl::string_view data )
 {
 	bool			ok;
@@ -928,4 +961,6 @@ bool EcoStation::sync_time( bool verbose )
 void EcoStation::trigger_ota_update( void )
 {
 	force_ota_update = true;
+	if ( solar_panel )
+		start_ota_task();
 }
