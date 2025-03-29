@@ -49,7 +49,7 @@ class AWSOTA {
 	public:
 
 						AWSOTA( void ) = default;
-		ota_status_t	check_for_update( const char *, const char *root_ca, etl::string<26> &, ota_action_t );
+		ota_status_t	check_for_update( const char *, bool, const char *root_ca, etl::string<26> &, ota_action_t );
 		void			set_aws_board_id( etl::string<24> & );
 		void			set_aws_config( etl::string<32> & );
 		void			set_aws_device_id( etl::string<18> & );
@@ -60,6 +60,7 @@ class AWSOTA {
 		etl::string_view				aws_board_id;
 		etl::string_view				aws_config;
 		etl::string_view				aws_device_id;
+		bool							check_certificate;
 		DeserializationError			deserialisation_status;
 		int								http_status;
 		JsonDocument					json_ota_config;
