@@ -1,7 +1,7 @@
 /*
   	config_manager.cpp
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -673,6 +673,9 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config["ota_url"].is<JsonVariant>( ))
 		json_config["ota_url"] = DEFAULT_OTA_URL;
 
+	if ( !json_config["check_certificate"].is<JsonVariant>( ))
+		json_config["check_certificate"] = DEFAULT_CHECK_CERTIFICATE;
+
 	if ( !json_config["sleep_minutes"].is<JsonVariant>( ))
 		json_config["sleep_minutes"] = DEFAULT_SLEEP_MINUTES;
 
@@ -784,6 +787,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "wifi_sta_ssid" ):
 				continue;
 			case str2int( "automatic_updates" ):
+			case str2int( "check_certificate" ):
 			case str2int( "data_push" ):
 				proposed_config[ item.key().c_str() ] = 1;
 				continue;
