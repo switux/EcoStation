@@ -544,7 +544,7 @@ bool EcoStation::on_solar_panel( void )
 	return solar_panel;
 }
 
-void EcoStation::ota_task( void *dummy )
+void EcoStation::ota_task( void *dummy ) // NOSONAR
 {
 	unsigned long	ota_millis	= 0;
 	unsigned long	ota_timer	= 30 * 60 * 1000;
