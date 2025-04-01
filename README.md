@@ -16,7 +16,7 @@ ESP32 based station for urban ecology.
 
 ## STATUS & DEVELOPMENT
 
-This is version 1.0 of the project. **It is still work in progress.**
+This is version 1.0 of the project.
 
 The things that might be improved in v1.1 are:
 
