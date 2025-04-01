@@ -50,10 +50,10 @@ The things that will be improved in v1.1 are:
 
 ## FEATURES
 
-  - Monitored parameters:
+  - Environmental parameters:
 
     - Temperature
-    - Pressure
+    - Atmospheric pressure
     - Relative humidity
     - Cloud coverage
     - Solar irradiance
@@ -63,8 +63,14 @@ The things that will be improved in v1.1 are:
   - Operations:
 
     - External reboot button
-    - Boot mode button (to be pushed when rebooting to activate debug mode or factory reset)
+    - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
+    - Feedback about station health (sensors,RTC,SDCard,...)
+    - Remote configuration of:
+      . SPL integration time
+      . Deep sleep duration
+      . RTC via LoRaWAN network time
+    - Configuration mode and runtime configuration updates activable via button
 
 ## SPECIFICATIONS
 
