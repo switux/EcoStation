@@ -23,7 +23,7 @@
 #include "common.h"
 #include "EcoStation.h"
 
-const etl::string<12>		REV					= "1.1.0";
+const etl::string<12>		REV					= "1.1.1";
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 EcoStation station;
