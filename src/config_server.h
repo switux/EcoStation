@@ -53,6 +53,7 @@ class AWSWebServer {
 		void		get_uptime( AsyncWebServerRequest * );
 		void		handle404( AsyncWebServerRequest * );
 		void		index( AsyncWebServerRequest * );
+		void		join_dr_override( AsyncWebServerRequest *);
 		void		reboot( AsyncWebServerRequest * );
 		void		rm_file( AsyncWebServerRequest * );
 		const char 	*save_configuration( const char *json_string );

@@ -4,7 +4,7 @@
 <!--
    index.html
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -139,6 +139,26 @@
 			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 				<table aria-describedby="Network config" style="margin: 0 auto">
 					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
+					<tr id="show_devuid">
+						<td>LoRaWAN DEVUID</td>
+						<td><span id="devuid"></span></td>
+					</tr>
+					<tr id="show_appkey">
+						<td>LoRaWAN APPKEY</td>
+						<td><span id="appkey"></span></td>
+					</tr>
+					<tr id="show_join_dr">
+						<td>LoRaWAN Initial join DR</td>
+						<td><select form="config" id="join_dr" name="join_dr">
+								<option value="0">0</option>
+								<option value="1">1</option>
+								<option value="2">2</option>
+								<option value="3">3</option>
+								<option value="4">4</option>
+								<option value="5">5</option>
+							</select>
+						</td>
+					</tr>
 					<tr id="show_wifi_mode">
 						<td>Mode</td>
 						<td>
@@ -383,6 +403,7 @@
 			<input class="awsbutton" style="width: 80px" type="button" onclick="reboot();" value="REBOOT">
 			<input class="awsbutton" style="width: 160px" type="button" onclick="force_ota();" value="Check for new version">
 			<a href="/get_backlog" class="awsbutton" style="display: inline-block; width: 160px" download="data.json">Get data backlog</a>
+			<input class="awsbutton" style="width: 160px" type="button" onclick="fetch_station_data();" value="Update dashboard">
 			
 			<span id="ota_msg"></span>
 			<span class="awsstatus" style="width: 160px;color: #80a080" id="build_id"></span>

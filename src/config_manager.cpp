@@ -74,19 +74,37 @@ uint8_t AWSConfig::char2int( char c )
 	return 0;
 }
 
-void AWSConfig::factory_reset( void )
+void AWSConfig::factory_reset( etl::string<64> &firmware_sha256 )
 {
-	bool x;
+	if ( !read_eeprom_and_nvs_config( firmware_sha256 ) ) {
 
+		Preferences nvs;
+		nvs.begin( "aws", false );
+		nvs.putString( "product", "ES" );
+		nvs.putString( "product_version", "1.0" );
+		nvs.putChar( "pwr_mode", 0 );
+		nvs.putChar( "has_ethernet", 0 );
+		nvs.putChar( "has_rtc", 1 );
+		nvs.putChar( "has_sdcard", 1 );
+		nvs.putChar( "has_lte", 0 );
+		nvs.putChar( "has_lorawan", 1 );
+		nvs.end();
+	}
+	
 	if ( !LittleFS.begin( true )) {
 
 		Serial.printf( "[CONFIGMNGR] [ERROR] Could not access flash filesystem, bailing out!\n" );
 		return;
 	}
 
-	x = LittleFS.remove( "/aws.conf" );
-	if ( debug_mode )
-		Serial.printf( "[CONFIGMNGR] [ERROR] Config file %ssuccessfully deleted.\n", x ? "" : "un" );
+	File x = LittleFS.open( "/aws.conf", "w" );
+	if ( x ) {
+
+		x.print( "{}" );
+		x.close();
+		if ( debug_mode )
+			Serial.printf( "[CONFIGMNGR] [ERROR] Config file %ssuccessfully truncated.\n", x ? "" : "un" );
+	}
 
 	LittleFS.end();
 }
@@ -229,6 +247,8 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 	json_config["has_rtc"] = ( ( devices & aws_device_t::RTC_DEVICE ) == aws_device_t::RTC_DEVICE );
 	json_config["has_lorawan"] = ( ( devices & aws_device_t::LORAWAN_DEVICE ) == aws_device_t::LORAWAN_DEVICE );
 	json_config["has_sdcard"] = ( ( devices & aws_device_t::SDCARD_DEVICE ) == aws_device_t::SDCARD_DEVICE );
+	json_config["lorawan_deveui"] = bytes_to_hex_string<8>( lora_eui.data(), 8, true );
+	json_config["lorawan_appkey"] = bytes_to_hex_string<16>( lora_appkey.data(), 16, false );
 
 	return true;
 }
@@ -359,7 +379,11 @@ bool AWSConfig::read_eeprom_and_nvs_config( etl::string<64> &firmware_sha56 )
 		sdcard = ( eeprom_config["has_sdcard"] == 1 );
 		lorawan = ( eeprom_config["has_lorawan"] == 1 );
 		pwr_mode = (aws_pwr_src) eeprom_config["pwr_mode"].as<uint8_t>();
-
+		memcpy( product.data(), eeprom_config["product"].as<String>().c_str(), eeprom_config["product"].as<String>().length() );
+		product.repair();
+		memcpy( product_version.data(), eeprom_config["product_version"].as<String>().c_str(), eeprom_config["product_version"].as<String>().length() );
+		product_version.repair();
+		
 		if ( lorawan ) {
 
 			to_hex_array( eeprom_config["lorawan_deveui"].as<String>().length(), eeprom_config["lorawan_deveui"], lora_eui.data(), true );
@@ -569,6 +593,9 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 void AWSConfig::set_missing_network_parameters_to_default_values( void )
 {
+	if ( !json_config["join_dr"].is<JsonVariant>())
+		json_config["join_dr"] = DEFAULT_JOIN_DR;
+
 	if ( !json_config["wifi_ap_ssid"].is<JsonVariant>())
 		json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
 
@@ -766,6 +793,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 		switch ( str2int( item.key().c_str() )) {
 
 			case str2int( "config_port" ):
+			case str2int( "join_dr" ):
 			case str2int( "ota_url" ):
 			case str2int( "pref_iface" ):
 			case str2int( "push_freq" ):

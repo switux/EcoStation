@@ -53,7 +53,7 @@ class AWSLoraWAN
 	public:
 
 					AWSLoraWAN( void );
-		bool		begin( std::array<uint8_t,8>, std::array<uint8_t,16>, bool );
+		bool		begin( std::array<uint8_t,8>, std::array<uint8_t,16>, _dr_eu868_t, bool );
 		void		empty_queue( void );
 		bool		join( void );
 		bool		has_joined( void );
