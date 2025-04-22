@@ -105,6 +105,7 @@ void AWSConfig::factory_reset( etl::string<64> &firmware_sha256 )
 		if ( debug_mode )
 			Serial.printf( "[CONFIGMNGR] [ERROR] Config file %ssuccessfully truncated.\n", x ? "" : "un" );
 	}
+
 	LittleFS.end();
 }
 
@@ -248,6 +249,7 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 	json_config["has_sdcard"] = ( ( devices & aws_device_t::SDCARD_DEVICE ) == aws_device_t::SDCARD_DEVICE );
 	json_config["lorawan_deveui"] = bytes_to_hex_string<8>( lora_eui.data(), 8, true );
 	json_config["lorawan_appkey"] = bytes_to_hex_string<16>( lora_appkey.data(), 16, false );
+
 	return true;
 }
 

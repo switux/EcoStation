@@ -1,6 +1,6 @@
 # EcoStation
 
-ESP32 based station for urban ecology.
+ESP32 based station for urban ecology using LoRaWAN to transmit data.
 
 ## Arduino Framework for ESP32
 
@@ -43,9 +43,9 @@ This is version 1.1.
 The things that might be improved in v1.2 are:
 
   - Software
-    - TBD
+    - Some reporting of data to ease operations / monitoring
   - Hardware
-    - TBD
+    - EEPROM to enable persistent, MCU independent, configuration items
 
 ## FEATURES
 
@@ -87,35 +87,13 @@ This section is being reworked as there are different hardware setups.
 
 ## Runtime configuration interface
 
-## Alarms format
-
-The station sends alarm to an HTTPS endpoint as a JSON string:
-
-{
-  "subject": "reason for the alarm",
-  "message": "what happened"
-}
-
 ## Data format
 
-The station sends the data to a web server as a JSON string:
+The station sends the data via a compact byte steam, it includes:
 
-{
-  "battery_level":92,
-  "timestamp":1675767261,
-  "temp":16.84000015,
-  "pres":941.1413574,
-  "rh":27.296875,
-  "lux":68181,
-  "ambient":21.42998695,
-  "sky":-3.19000864,
-  "sensors":63
-}
-
-Where
-
+- data format version
 - battery_level: in % of 4.2V
-- timestamp: Unix epoch time
+- timestamp: Unix epoch time, taken from external RTC
 - temp: in °C
 - pres: in hPa (QFE)
 - rh: relative humidity in %
@@ -123,6 +101,8 @@ Where
 - ambient: IR sensor ambient temperature
 - sky: IR sensor sky temperature (substract ambient to get sky temperature, if below -20° --> sky is clear)
 - sensors: available sensors (see source code)
+- uptime (between soft/cold reboots)
+- some debug data like free sdcard space, reset reason, build info, deepsleep duration
 
 ## REFERENCES
 
@@ -132,7 +112,7 @@ I found inspiration in the following pages / posts:
     - https://randomnerdtutorials.com/solved-failed-to-connect-to-esp32-timed-out-waiting-for-packet-header
   - Reading battery load level without draining it
     - https://jeelabs.org/2013/05/18/zero-power-measurement-part-2/index.html
-  - To workaround the 3.3V limitation to trigger the P-FET of the above ( I used an IRF930 to drive the IRF9540 )
+  - To workaround the 3.3V limitation to trigger the P-FET of the above
     - https://electronics.stackexchange.com/a/562942
   - Solar panel tilt
     - https://globalsolaratlas.info/

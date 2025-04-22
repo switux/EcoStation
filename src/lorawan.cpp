@@ -28,6 +28,7 @@ extern EcoStation station;
 extern _dr_eu868_t LMIC_join_dr;
 #endif
 
+
 const lmic_pinmap lmic_pins = {
 	.nss	= GPIO_LORA_CS,
 	.rxtx	= LMIC_UNUSED_PIN,
@@ -241,7 +242,7 @@ void AWSLoraWAN::request_network_time( void )
 
 void AWSLoraWAN::request_network_time_callback( time_t utc_time, int result )
 {
-    lmic_time_reference_t 	lmic_time_ref;
+  lmic_time_reference_t 	lmic_time_ref;
 
 	if ( result != 1 ) {
 

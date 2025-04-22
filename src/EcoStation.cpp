@@ -242,6 +242,7 @@ bool EcoStation::fixup_timestamp( void )
 	d.repair();
 	Serial.printf( "[STATION   ] [INFO ] RTC time: %s (%d)\n", d.data(), now );
 	sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, true );
+
 	return true;
 }
 
