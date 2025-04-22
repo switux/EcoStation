@@ -2,23 +2,45 @@
 
 ESP32 based station for urban ecology.
 
-## PRE-REQUISITES (WIP)
+## Arduino Framework for ESP32
+
+  - Currently using 2.0.17
+
+## LIBRARIES
+
+  - Adafruit_BME_280_Library (2.2.4)
+  - Adafruit_BusIO (1.16.1) (dependency from other Adafruit libraries)
+  - Adafruit_MLX90614_Library (2.1.5)
+  - Adafruit_TSL2591_Library (1.4.5)
+  - Adafruit_Unified_Sensor (1.1.14) (dependency from other Adafruit libraries)
+  - ArduinoJson (7.2.1)
+  - AsyncTCP (1.1.4)
+  - Embedded_Template_Library_ETL (20.39.4)
+  - ESP32Time (2.0.6)
+  - ESPAsyncWebServer (3.1.0)
+  - ESPping (1.0.4)
+  - MCCI_LoRaWAN_LMIC_library (5.0.1)
+  - SD (1.3.0)
+  - SSLClient (1.6.11)
 
 ## BUILD INSTRUCTIONS
 
-  - Arduino IDE ( add the lines in bold to ~/.arduino15/packages/esp**xxxx**/hardware/esp**xxxx**/**{version}**/platform.local.txt )
+  - Arduino IDE ( add the lines in bold to ~/.arduino15/packages/esp32/hardware/esp32/2.0.17/platform.local.txt )
 
     - A sequential build number is embedded in the code every time a build is made (whether it is successful or not)
 
-    **recipe.hooks.prebuild.0.pattern={build.source.path}/../build_seq.sh {build.source.path}**
+    **recipe.hooks.prebuild.0.pattern={build.source.path}/build_seq.sh {build.source.path} {build.path}**
 
-    For the hook to work, you will also need to create a link (or copy the file) to the file "build.sh" from sketch directory to the path of the sketch book. Sorry for the mess ... if you have a better solution, you are most welcome!
+    - The project uses ESPAsyncWebServer regex, add:
+
+    **compiler.cpp.extra_flags=-DASYNCWEBSERVER_REGEX=1**
+
 
 ## STATUS & DEVELOPMENT
 
-This is version 1.0 of the project. **It is still work in progress.**
+This is version 1.1.
 
-The things that might be improved in v1.1 are:
+The things that might be improved in v1.2 are:
 
   - Software
     - TBD
@@ -27,25 +49,26 @@ The things that might be improved in v1.1 are:
 
 ## FEATURES
 
-  - Weather parameters:
+  - Environmental parameters:
 
     - Temperature
-    - Pressure
+    - Atmospheric pressure
     - Relative humidity
     - Cloud coverage
     - Solar irradiance
     - Sky Quality Meter for light pollution
- 
-  - Alarms for:
- 
-    - Sensor unavailability
-    - Low battery
+    - Sound pressure level
  
   - Operations:
 
     - External reboot button
     - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
+    - Feedback about station health (sensors,RTC,SDCard,...)
+    - Remote configuration of:
+      . SPL integration time
+      . Deep sleep duration
+      . RTC via LoRaWAN network time
     - Configuration mode and runtime configuration updates activable via button
 
 ## SPECIFICATIONS
