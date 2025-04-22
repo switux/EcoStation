@@ -166,10 +166,13 @@ void EcoStation::display_banner()
 
 	print_runtime_config();
 
-//	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
-//	Serial.printf( "[STATION   ] [INFO ] # LIBRARIES                                                                                 #\n" );
-//	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+#if defined(ARDUINO_LMIC_OVERRIDE_INITIAL_JOIN_DR)
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "[STATION   ] [INFO ] # LIBRARIES                                                                                 #\n" );
+	Serial.printf( "[STATION   ] [INFO ] #-------------------------------------------------------------------------------------------#\n" );
 
+	Serial.printf( "[STATION   ] [INFO ] # MCCI_LoRaWAN_LMIC_library: ARDUINO_LMIC_OVERRIDE_INITIAL_JOIN_DR enabled                  #\n" );
+#endif
 //	for( i = 0; i < NBLIB; i++ )
 //		print_config_string( "# %35s : %s", libraries[i].data(), libversions[i].data() );
 
@@ -207,7 +210,7 @@ bool EcoStation::enter_maintenance_mode( void )
 void EcoStation::factory_reset( void )
 {
 	Serial.printf( "[STATION   ] [INFO ] Performing factory reset.\n ");
-	config.factory_reset();
+	config.factory_reset( station_data.firmware_sha56 );
 	reboot();
 }
 
@@ -221,6 +224,7 @@ bool EcoStation::fixup_timestamp( void )
 		sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, false );
 		return false;
 	}
+
 	if ( !aws_rtc.begin() ) {
 
 		Serial.printf( "[STATION   ] [ERROR] RTC not found.\n");
@@ -236,8 +240,8 @@ bool EcoStation::fixup_timestamp( void )
 	etl::string<50> d;
 	strftime( d.data(), d.capacity(), "%Y-%m-%d %H:%M:%S", &timeinfo );
 	d.repair();
-	Serial.printf( "[STATION   ] [INFO ] RTC time: %s\n", d.data() );
-		sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, true );
+	Serial.printf( "[STATION   ] [INFO ] RTC time: %s (%d)\n", d.data(), now );
+	sensor_manager.update_available_sensors( aws_device_t::RTC_DEVICE, true );
 	return true;
 }
 
@@ -392,6 +396,7 @@ bool EcoStation::initialise( void )
 	if ( strlen( config.get_product().data())) {
 
 		ota_setup.config += config.get_product().data();
+		ota_setup.config += "_";
 		ota_setup.config += config.get_product_version().data();
 
 	} else

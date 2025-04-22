@@ -18,11 +18,15 @@
 */
 
 #include "gpio_config.h"
-#include "lorawan.h"
 #include "common.h"
+#include "lorawan.h"
 #include "EcoStation.h"
 
 extern EcoStation station;
+
+#if defined(ARDUINO_LMIC_OVERRIDE_INITIAL_JOIN_DR)
+extern _dr_eu868_t LMIC_join_dr;
+#endif
 
 const lmic_pinmap lmic_pins = {
 	.nss	= GPIO_LORA_CS,
@@ -55,12 +59,16 @@ AWSLoraWAN::AWSLoraWAN( void )
 	me = this;
 }
 
-bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> appkey, bool _debug_mode )
+bool AWSLoraWAN::begin( std::array<uint8_t,8> deveui, std::array<uint8_t,16> appkey, _dr_eu868_t join_dr, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
 
 	memcpy_P( DEVEUI, deveui.data(), 8 );
 	memcpy_P( APPKEY, appkey.data(), 16 );
+
+#if defined(ARDUINO_LMIC_OVERRIDE_INITIAL_JOIN_DR)
+	LMIC_join_dr = join_dr;
+#endif
 
 	os_init();
 	LMIC_reset();
@@ -143,7 +151,14 @@ bool AWSLoraWAN::join( void )
 
 	unsigned long	start = millis();
 
-	while (( !joined ) && ( ( millis() - start ) < (5*60*1000) )) { /* wait 20s before giving up */ };
+	// At SF7, 3 attempts per minute or so
+	// At SF8, 3 attempts every two minutes or so => starts at t0 + 3'
+	// At SF9, 3 attempts every four minutes or so => starts at t0 + 9'
+	// At SF10, 3 attempts every eight minutes or so => starts at t0 + 21'
+	// At SF11, 3 attempts every 16 minutes or so => starts at t0 + 45'
+	// At SF12, 3 attempts every 32 minutes or so => starts at t0 + 87' and stays here
+
+	while (( !joined ) && ( ( millis() - start ) < (120*60*1000) )) { /* Wait until we try 2x at SF12 */ };
 
 	if ( !joined )
 

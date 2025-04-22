@@ -25,6 +25,8 @@
 #include "Embedded_Template_Library.h"
 #include "etl/string.h"
 #include "etl/string_utilities.h"
+#include <HardwareSerial.h>
+#include "lmic.h"
 
 #include "build_id.h"
 

@@ -1,7 +1,7 @@
 /*
    aws.js
 
-	(c) 2023-2024 F.Lesage
+	(c) 2023-2025 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@ const	CLOUD_COVERAGE = [ 'Clear', 'Cloudy', 'Overcast' ];
 const	WIFI_MODE = [ 'Client', 'AP', 'Both' ];
 
 let sleepSetTimeout_ctrl;
+let fetch_station_data_retries = 0;
 
 function config_section_active( section_name, yes_no )
 {
@@ -65,9 +66,24 @@ function fetch_station_data()
 				update_dashboard( values );
 			} else if ( this.status == 503 ) {
 				document.getElementById("status").textContent = "Station not ready";
+				fetch_station_data_retries++;
 			}
 		}
 	};
+	if ( fetch_station_data_retries > 3 ) {
+		let req2 = new XMLHttpRequest();
+		req2.onreadystationchange = function() {
+			if ( this.readyState == 4 ) {
+				if ( this.status == 200 ) {
+					document.getElementById("status").textContent = "Sensors activated";
+				} else if ( this.status == 503 ) {
+					document.getElementById("status").textContent = "Station not ready / Cannot activate sensors";
+				}
+			}
+		};
+		req2.open( "GET", "/activate_sensors", true );
+		req2.send();
+	}
 	req.open( "GET", "/get_station_data", true );
 	req.send();
 }
@@ -82,8 +98,28 @@ function fill_cloud_coverage_parameter_values( values )
 	document.getElementById("cc_aag_overcast").value = values['cc_aag_overcast'];
 }
 
+function fill_lorawan_values( values )
+{
+	if ( !values['has_lorawan'] ) {
+
+		console.log("No lorawan");
+		document.getElementById("show_devuid").style.display = 'none';
+		document.getElementById("show_appkey").style.display = 'none';
+		document.getElementById("show_join_dr").style.display = 'none';
+		return;
+	}
+	document.getElementById("show_devuid").style.display = 'table-row';
+	document.getElementById("show_appkey").style.display = 'table-row';
+	document.getElementById("show_join_dr").style.display = 'table-row';
+	document.getElementById("devuid").textContent = values['lorawan_deveui'];
+	document.getElementById("appkey").textContent = values['lorawan_appkey'];
+	const join_dr = document.querySelector( '#join_dr' );
+	join_dr.value = values['join_dr'];
+}
+
 function fill_network_values( values )
 {
+	fill_lorawan_values( values );
 	switch( WIFI_MODE[ values['wifi_mode'] ] ) {
 		case 'AP':
 			document.getElementById("AP").checked = true;
@@ -197,6 +233,18 @@ function retrieve_data()
 	};
 	req2.open( "GET", "/get_root_ca", true );
 	req2.send();
+	
+	let req3 = new XMLHttpRequest();
+	req3.onreadystatechange = function() {
+		if ( this.readyState == 4 && this.status == 200 ) {
+			if ( req3.responseText == "true" )
+				document.getElementById("show_join_dr").style.display = 'table-row';
+			else
+				document.getElementById("show_join_dr").style.display = 'none';
+		}
+	};
+	req3.open( "GET", "/join_dr_override", true )
+	req3.send();	
 }
 
 function send_config()
@@ -230,7 +278,7 @@ function toggle_panel( panel_id )
 			config_section_active( panel, true );
 		else
 			config_section_active( panel, false );
-	}); 
+	});
 	if ( panel_id == 'dashboard' ) {
 
 		fetch_station_data();
@@ -417,10 +465,10 @@ function update_sensor_dashboard( values )
 		document.getElementById('cloud_led').querySelector('.led_color').style.backgroundColor = 'green';
 	else
 		document.getElementById('cloud_led').querySelector('.led_color').style.backgroundColor = 'red';
-	
+
 	if ( values['available_sensors'] & SPL_SENSOR )
 		document.getElementById('spl_led').querySelector('.led_color').style.backgroundColor = 'green';
 	else
 		document.getElementById('spl_led').querySelector('.led_color').style.backgroundColor = 'red';
-	
+
 }

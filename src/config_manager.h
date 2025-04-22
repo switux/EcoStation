@@ -79,7 +79,7 @@ const uint8_t			DEFAULT_SPL_DURATION					= 0;
 
 const aws_wifi_mode		DEFAULT_WIFI_MODE						= aws_wifi_mode::both;
 const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE				= aws_ip_mode::dhcp;
-
+const _dr_eu868_t		DEFAULT_JOIN_DR							= EU868_DR_SF7;
 const bool				DEFAULT_DATA_PUSH						= true;
 const uint16_t			DEFAULT_PUSH_FREQ						= 300;
 const bool				DEFAULT_CHECK_CERTIFICATE				= false;
@@ -91,7 +91,7 @@ class AWSConfig {
 
 								AWSConfig( void ) = default;
 		bool					can_rollback( void );
-		void					factory_reset( void );
+		void					factory_reset( etl::string<64> & );
 		uint32_t				get_fs_free_space( void );
 		template <typename T>
 		T 						get_parameter( const char * );
@@ -200,6 +200,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "automatic_updates" ):
 		case str2int( "check_certificate" ):
 		case str2int( "data_push" ):
+		case str2int( "join_dr" ):
 		case str2int( "msas_calibration_offset" ):
 		case str2int( "ota_url" ):
 		case str2int( "pref_iface" ):

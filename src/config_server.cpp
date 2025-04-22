@@ -159,6 +159,15 @@ bool AWSWebServer::initialise( bool _debug_mode )
 	return true;
 }
 
+void AWSWebServer::join_dr_override( AsyncWebServerRequest *request )
+{
+#if defined( ARDUINO_LMIC_OVERRIDE_INITIAL_JOIN_DR )
+	request->send( 200, "text/plain", "true" );
+#else
+	request->send( 200, "text/plain", "false" );
+#endif
+}
+
 void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {
 	if ( !LittleFS.begin()) {
@@ -267,6 +276,7 @@ void AWSWebServer::start( void )
 	server->on( "/get_station_data", HTTP_GET, std::bind( &AWSWebServer::get_station_data, this, std::placeholders::_1 ));
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
 	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
+	server->on( "/join_dr_override", HTTP_GET, std::bind( &AWSWebServer::join_dr_override, this, std::placeholders::_1 ));
 	server->on( "/ota_update", HTTP_GET, std::bind( &AWSWebServer::attempt_ota_update, this, std::placeholders::_1 ));
 	server->on( "/rm_file", HTTP_GET, std::bind( &AWSWebServer::rm_file, this, std::placeholders::_1 ));
 	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));

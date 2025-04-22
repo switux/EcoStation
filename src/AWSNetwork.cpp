@@ -138,7 +138,7 @@ void AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 	UNSELECT_SPI_DEVICES();
 
 	if ( config->get_has_device( aws_device_t::LORAWAN_DEVICE ))
-		lorawan.begin( _config->get_lora_deveui(), _config->get_lora_appkey(), _debug_mode );
+		lorawan.begin( _config->get_lora_deveui(), _config->get_lora_appkey(), static_cast<_dr_eu868_t>(config->get_parameter<int>( "join_dr" )), _debug_mode );
 
 	initialise_wifi();
 }

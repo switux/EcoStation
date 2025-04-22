@@ -59,9 +59,8 @@ void AWSRTC::set_datetime( time_t *now )
 	Wire.write( decimal_to_bcd( utc_time->tm_mday ));
 	Wire.write( decimal_to_bcd( utc_time->tm_mon ) + 1 );
 	Wire.write( decimal_to_bcd( utc_time->tm_year - 100 ));
-	Wire.endTransmission();
-
-	Serial.printf( "[RTC       ] [INFO ] Setting time: %04d-%02d-%02d %02d:%02d:%02d\n", 1900+utc_time->tm_year, utc_time->tm_mon + 1, utc_time->tm_mday, utc_time->tm_hour, utc_time->tm_min, utc_time->tm_sec );
+	if ( Wire.endTransmission() == 0 )
+		Serial.printf( "[RTC       ] [INFO ] Setting time: %04d-%02d-%02d %02d:%02d:%02d\n", 1900+utc_time->tm_year, utc_time->tm_mon + 1, utc_time->tm_mday, utc_time->tm_hour, utc_time->tm_min, utc_time->tm_sec );
 }
 
 void AWSRTC::get_datetime( struct tm *utc_time )
