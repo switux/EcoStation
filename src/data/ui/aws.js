@@ -283,7 +283,7 @@ function toggle_panel( panel_id )
 	if ( panel_id == 'dashboard' ) {
 
 		fetch_station_data();
-		dashboardRefresh = setInterval( fetch_station_data, 10000 );
+		let dashboardRefresh = setInterval( fetch_station_data, 10000 );
 
 	} else
 		clearInterval( dashboard_refresh );
