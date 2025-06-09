@@ -136,7 +136,7 @@ void AWSWebServer::index( AsyncWebServerRequest *request )
 		return;
 
 	}
-	request->send( LittleFS, "/index.html" );
+	request->send( LittleFS, "/ui/index.html" );
 }
 
 bool AWSWebServer::initialise( bool _debug_mode )
@@ -268,7 +268,7 @@ void AWSWebServer::start( void )
 {
 	server->addHandler( new AsyncCallbackJsonWebHandler( "/set_config", std::bind( &AWSWebServer::set_configuration, this, std::placeholders::_1, std::placeholders::_2 )));
 	server->on( "/activate_sensors", HTTP_GET, std::bind( &AWSWebServer::activate_sensors, this, std::placeholders::_1 ));
-	server->on( "/aws.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
+	server->on( "/ui/aws.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/unsent.txt", HTTP_GET, std::bind( &AWSWebServer::send_sdcard_file, this, std::placeholders::_1 ));
 	server->on( "/get_backlog", HTTP_GET, std::bind( &AWSWebServer::get_backlog, this, std::placeholders::_1 ));

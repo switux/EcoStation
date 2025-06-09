@@ -383,7 +383,7 @@ bool EcoStation::initialise( void )
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
 
-	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
+	if ( ( station_data.reset_reason != ESP_RST_DEEPSLEEP ) && solar_panel )
 		boot_timestamp = 0;
 
 	ota_setup.board = "ECO_";
