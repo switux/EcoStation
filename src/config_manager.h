@@ -140,6 +140,7 @@ class AWSConfig {
 		template <typename T>
 		T 					get_aag_parameter( const char * );
 		void				list_files( void );
+		void				migrate_config_and_ui( void );
 		char				nibble_to_hex_char(uint8_t) const;
 		bool				read_config( etl::string<64> & );
 		bool				read_file( const char * );

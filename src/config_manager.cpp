@@ -215,6 +215,24 @@ bool AWSConfig::load( etl::string<64> &firmware_sha256, bool _debug_mode  )
 	return read_config( firmware_sha256 );
 }
 
+void AWSConfig::migrate_config_and_ui( void )
+{
+	if ( LittleFS.exists( "/config/aws.conf" ))
+
+		return;
+
+	else {
+
+		LittleFS.rename( "/aws.conf" , "/config/aws.conf" );
+		LittleFS.rename( "/aws.conf.dfl" , "/config/aws.conf.dfl" );
+		LittleFS.rename( "/root_ca.txt" , "/config/root_ca.txt" );
+
+		LittleFS.rename( "/index.html" , "/ui/index.html" );
+		LittleFS.rename( "/aws.js" , "/ui/aws.js" );
+
+	}
+}
+
 char AWSConfig::nibble_to_hex_char(uint8_t nibble) const
 {
 	return (nibble < 10) ? ('0' + nibble) : ('A' + nibble - 10);
@@ -224,11 +242,13 @@ bool AWSConfig::read_config( etl::string<64> &firmware_sha256 )
 {
 	read_eeprom_and_nvs_config( firmware_sha256 );
 
+	migrate_config_and_ui();
+
 	read_root_ca();
 
-	if ( !read_file( "/aws.conf"  ) ) {
+	if ( !read_file( "/config/aws.conf"  ) ) {
 
-		if ( !read_file( "/aws.conf.dfl" )) {
+		if ( !read_file( "/config/aws.conf.dfl" )) {
 
 			Serial.printf( "\n[CONFIGMNGR] [ERROR] Could not read config file.\n" );
 			return false;
@@ -404,8 +424,8 @@ void AWSConfig::read_root_ca( void )
 	File 	file;
 	int		s;
 
-	if ( LittleFS.exists( "/root_ca.txt" ) )
-		file = LittleFS.open( "/root_ca.txt", FILE_READ );
+	if ( LittleFS.exists( "/config/root_ca.txt" ) )
+		file = LittleFS.open( "/config/root_ca.txt", FILE_READ );
 
 	if ( !file ) {
 
@@ -493,8 +513,8 @@ bool AWSConfig::rollback()
 		return false;
 	}
 
-	LittleFS.remove( "/aws.conf" );
-	LittleFS.rename( "/aws.conf.bak", "/aws.conf" );
+	LittleFS.remove( "/config/aws.conf" );
+	LittleFS.rename( "/config/aws.conf.bak", "/config/aws.conf" );
 	Serial.printf( "[CONFIGMNGR] [INFO ] Rollback successful.\n" );
 	_can_rollback = 0;
 	return true;
@@ -532,12 +552,12 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 	update_fs_free_space();
 
-	LittleFS.remove( "/aws.conf.bak.try" );
-	LittleFS.rename( "/aws.conf", "/aws.conf.bak.try" );
-	LittleFS.remove( "/aws.conf.try" );
+	LittleFS.remove( "/config/aws.conf.bak.try" );
+	LittleFS.rename( "/config/aws.conf", "/config/aws.conf.bak.try" );
+	LittleFS.remove( "/config(aws.conf.try" );
 
 	// flawfinder: ignore
-	File file = LittleFS.open( "/aws.conf.try", FILE_WRITE );
+	File file = LittleFS.open( "/config/aws.conf.try", FILE_WRITE );
 	if ( !file ) {
 
 		Serial.printf( "[CONFIGMNGR] [ERROR] Cannot write configuration file, rolling back.\n" );
@@ -548,41 +568,41 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	file.close();
 	if ( !s ) {
 
-		LittleFS.remove( "/aws.conf" );
-		LittleFS.remove( "/aws.conf.try" );
-		LittleFS.rename( "/aws.conf.bak.try", "/aws.conf" );
+		LittleFS.remove( "/config/aws.conf" );
+		LittleFS.remove( "/config/aws.conf.try" );
+		LittleFS.rename( "/config/aws.conf.bak.try", "/config/aws.conf" );
 		Serial.printf( "[CONFIGMNGR] [ERROR] Empty configuration file, rolling back.\n" );
 		return false;
 
 	}
 	if ( s > MAX_CONFIG_FILE_SIZE ) {
 
-		LittleFS.remove( "/aws.conf.try" );
-		LittleFS.rename( "/aws.conf.bak.try", "/aws.conf" );
+		LittleFS.remove( "/config/aws.conf.try" );
+		LittleFS.rename( "/config/aws.conf.bak.try", "/config/aws.conf" );
 		Serial.printf( "[CONFIGMNGR] [ERROR] Configuration file is too big [%d bytes].\n" );
 		station.send_alarm( "Configuration error", "Configuration file is too big. Not applying changes!" );
 		return false;
 
 	}
 
-	LittleFS.remove( "/aws.conf" );
+	LittleFS.remove( "/config/aws.conf" );
 
 	if ( debug_mode )
 		list_files();
 
-	LittleFS.rename( "/aws.conf.try", "/aws.conf" );
-	LittleFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
+	LittleFS.rename( "/config/aws.conf.try", "/config/aws.conf" );
+	LittleFS.rename( "/config/aws.conf.bak.try", "/config/aws.conf.bak" );
 	Serial.printf( "[CONFIGMNGR] [INFO ] Wrote %d bytes, configuration save successful.\n", s );
 
-	LittleFS.remove( "/root_ca.txt.try" );
-	if ( LittleFS.exists( "/root_ca.txt" ))
-		LittleFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
+	LittleFS.remove( "/config/root_ca.txt.try" );
+	if ( LittleFS.exists( "/config/root_ca.txt" ))
+		LittleFS.rename( "/config/root_ca.txt", "/config/root_ca.txt.try" );
 
-	file = LittleFS.open( "/root_ca.txt.try", FILE_WRITE );
+	file = LittleFS.open( "/config/root_ca.txt.try", FILE_WRITE );
 	s = file.print( root_ca.data() );
 	file.close();
 	Serial.printf( "[CONFIGMNGR] [INFO ] Wrote %d bytes of ROOT CA.\n", s );
-	LittleFS.rename( "/root_ca.txt.try", "/root_ca.txt" );
+	LittleFS.rename( "/config/root_ca.txt.try", "/config/root_ca.txt" );
 
 	_can_rollback = 1;
 	if ( debug_mode )
