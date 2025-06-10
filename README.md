@@ -2,6 +2,8 @@
 
 ESP32 based station for urban ecology using LoRaWAN to transmit data.
 
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=switux_EcoStation)](https://sonarcloud.io/summary/new_code?id=switux_EcoStation)
+
 ## Arduino Framework for ESP32
 
   - Currently using 2.0.17
