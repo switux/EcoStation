@@ -223,10 +223,12 @@ void AWSConfig::migrate_config_and_ui( void )
 
 	else {
 
+		LittleFS.mkdir( "/config" );
 		LittleFS.rename( "/aws.conf" , "/config/aws.conf" );
 		LittleFS.rename( "/aws.conf.dfl" , "/config/aws.conf.dfl" );
 		LittleFS.rename( "/root_ca.txt" , "/config/root_ca.txt" );
 
+		LittleFS.mkdir( "/ui" );
 		LittleFS.rename( "/index.html" , "/ui/index.html" );
 		LittleFS.rename( "/aws.js" , "/ui/aws.js" );
 
