@@ -40,7 +40,7 @@ const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR |
 									aws_device_t::BME_SENSOR |
 									aws_device_t::SPL_SENSOR );
 
-const std::array<etl::string_view,3> CLOUD_COVERAGE_STR = { etl::string_view( "Clear" ), etl::string_view( "Cloudy" ), etl::string_view( "Overcast" ) };
+const std::array<etl::string_view,3> SKY_CONDITION_STR = { etl::string_view( "Clear" ), etl::string_view( "Cloudy" ), etl::string_view( "Overcast" ) };
 
 extern EcoStation station;
 
@@ -322,13 +322,13 @@ void AWSSensorManager::read_MLX( void )
 		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 ) {
 
 			sensor_data.weather.sky_temperature -= sensor_data.weather.ambient_temperature;
-			sensor_data.weather.cloud_coverage = ( sensor_data.weather.sky_temperature <= -15 ) ? 0 : 2;
+			sensor_data.weather.sky_condition = ( sensor_data.weather.sky_temperature <= -15 ) ? 0 : 2;
 			if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aws_cloudy" ) )
-				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLEAR );
+				sensor_data.weather.sky_condition = static_cast<uint8_t>( sky_condition::CLEAR );
 			else if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aws_overcast" ) )
-				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLOUDY );
+				sensor_data.weather.sky_condition = static_cast<uint8_t>( sky_condition::CLOUDY );
 			else
-				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::OVERCAST );
+				sensor_data.weather.sky_condition = static_cast<uint8_t>( sky_condition::OVERCAST );
 
 		}
 		else {
@@ -343,15 +343,15 @@ void AWSSensorManager::read_MLX( void )
 			sensor_data.weather.sky_temperature -= t;
 
 			if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aag_cloudy" ) )
-				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLEAR );
+				sensor_data.weather.sky_condition = static_cast<uint8_t>( sky_condition::CLEAR );
 			else if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aag_overcast" ) )
-				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLOUDY );
+				sensor_data.weather.sky_condition = static_cast<uint8_t>( sky_condition::CLOUDY );
 			else
-				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::OVERCAST );
+				sensor_data.weather.sky_condition = static_cast<uint8_t>( sky_condition::OVERCAST );
 
 		}
 		if ( debug_mode )
-			Serial.printf( "[SENSORMNGR] [DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f / Cloud coverage = %s (%d)\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature, CLOUD_COVERAGE_STR[sensor_data.weather.cloud_coverage].data(), sensor_data.weather.cloud_coverage );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f / Cloud coverage = %s (%d)\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature, SKY_CONDITION_STR[sensor_data.weather.sky_condition].data(), sensor_data.weather.sky_condition );
 		return;
 	}
 	sensor_data.weather.ambient_temperature = -99.F;
@@ -398,7 +398,6 @@ void AWSSensorManager::encode_sensor_data( void )
 	compact_data->timestamp = sensor_data.timestamp;
 
 	compact_data->lux = float_to_int32_encode( sensor_data.sun.lux, 0, 80000 );
-	compact_data->irradiance = float_to_int16_encode( sensor_data.sun.irradiance, 0, 1000 );
 
 	compact_data->temperature = float_to_int16_encode( sensor_data.weather.temperature, -40, 50 );
 	compact_data->pressure = float_to_int32_encode( sensor_data.weather.pressure, 700, 1050 );
@@ -407,8 +406,7 @@ void AWSSensorManager::encode_sensor_data( void )
 	compact_data->ambient_temperature = float_to_int16_encode( sensor_data.weather.ambient_temperature, -40, 50 );
 	compact_data->raw_sky_temperature = float_to_int16_encode( sensor_data.weather.raw_sky_temperature, -100, 50 );
 	compact_data->sky_temperature = float_to_int16_encode( sensor_data.weather.sky_temperature, -100, 50 );
-	compact_data->cloud_cover = float_to_int16_encode( sensor_data.weather.cloud_cover, -100, 50 );
-	compact_data->cloud_coverage = sensor_data.weather.cloud_coverage;
+	compact_data->sky_condition = sensor_data.weather.sky_condition;
 
 	compact_data->msas = float_to_int16_encode( sensor_data.sqm.msas, 0, 30);
 	compact_data->nelm = float_to_int16_encode( sensor_data.sqm.nelm, -15, 10 );

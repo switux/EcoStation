@@ -33,7 +33,7 @@
 // Force DEBUG output even if not activated by external button
 const uint8_t DEBUG_MODE = 1;
 
-const uint8_t COMPACT_DATA_FORMAT_VERSION = 0x03;
+const uint8_t COMPACT_DATA_FORMAT_VERSION = 0x04;
 
 extern const etl::string<12>	REV;
 extern HardwareSerial			Serial1;	// NOSONAR
@@ -102,8 +102,8 @@ struct weather_data_t {
 	float	ambient_temperature;
 	float	raw_sky_temperature;
 	float	sky_temperature;
-	float	cloud_cover;
-	uint8_t	cloud_coverage;
+	uint8_t	cloud_cover;
+	uint8_t	sky_condition;
 };
 
 struct sun_data_t {
@@ -139,7 +139,6 @@ struct compact_data_t {
 	time_t			timestamp;
 
 	int32_t			lux;
-	int16_t			irradiance;
 
 	int16_t			temperature;
 	int32_t			pressure;
@@ -148,8 +147,8 @@ struct compact_data_t {
 	int16_t			ambient_temperature;
 	int16_t			raw_sky_temperature;
 	int16_t			sky_temperature;
-	int16_t			cloud_cover;
-	uint8_t			cloud_coverage;
+	uint8_t			sky_condition;
+	uint8_t			cloud_cover;
 
 	int16_t			msas;
 	int16_t			nelm;
@@ -165,6 +164,8 @@ struct compact_data_t {
 	uint32_t		reset_reason;
 	uint32_t		build_info;
 	uint16_t		sleep_minutes;
+	uint8_t			data_counter[3];
+
 } __attribute__ ((packed));
 
 void loop( void );

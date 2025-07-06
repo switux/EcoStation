@@ -36,7 +36,7 @@
 const float			LUX_TO_IRRADIANCE_FACTOR	= 0.88;
 const unsigned int	TSL_MAX_LUX					= 88000;
 
-enum struct cloud_coverage : uint8_t {
+enum struct sky_condition : uint8_t {
 
 	CLEAR,
 	CLOUDY,

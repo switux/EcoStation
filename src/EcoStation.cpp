@@ -55,6 +55,7 @@ const unsigned long		FACTORY_RESET_GUARD			= 15000000;	// 15 seconds
 const unsigned long		MAINTENANCE_MODE_GUARD		= 5000000;	// 5 seconds
 
 RTC_DATA_ATTR time_t 	boot_timestamp = 0;				// NOSONAR
+RTC_DATA_ATTR uint32_t	data_count = 0;					// NOSONAR
 RTC_DATA_ATTR time_t 	last_ntp_time = 0;				// NOSONAR
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;			// NOSONAR
 RTC_DATA_ATTR uint16_t 	low_battery_event_count = 0;	// NOSONAR
@@ -62,6 +63,9 @@ RTC_NOINIT_ATTR bool	ota_update_ongoing = false;		// NOSONAR
 
 EcoStation::EcoStation( void )
 {
+	uint32_t	v;
+	bool		wrap = ( data_count > 0x7FFFFF );
+
 	station_data.health.init_heap_size = xPortGetFreeHeapSize();
 	station_data.health.current_heap_size = station_data.health.init_heap_size;
 	station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
@@ -72,6 +76,14 @@ EcoStation::EcoStation( void )
 							(( BUILD_ID[4] - '0') * 100000 ) + (( BUILD_ID[5] - '0') * 10000 ) +\
 							(( BUILD_ID[6] - '0') * 1000 ) + (( BUILD_ID[7] - '0') * 100 ) +\
 							(( BUILD_ID[10] - '0') * 10 ) + (( BUILD_ID[11] - '0'));
+
+	v = (( wrap ? ( data_count - 0x800000 ) : data_count ) & 0x7FFFFF ) | ( wrap << 23 );
+
+	compact_data.data_counter[ 0 ] = v & 0xFF;
+	compact_data.data_counter[ 1 ] = ( v >> 8 ) & 0xFF;
+	compact_data.data_counter[ 2 ] = ( v >> 16 ) & 0xFF;
+
+	data_count++;
 }
 
 bool EcoStation::activate_sensors( void )
@@ -281,7 +293,7 @@ etl::string_view EcoStation::get_json_sensor_data( void )
 	json_data["raw_sky_temperature"] = sensor_data->weather.raw_sky_temperature;
 	json_data["sky_temperature"] = sensor_data->weather.sky_temperature;
 	json_data["ambient_temperature"] = sensor_data->weather.ambient_temperature;
-	json_data["cloud_coverage"] = sensor_data->weather.cloud_coverage;
+	json_data["sky_condition"] = sensor_data->weather.sky_condition;
 	json_data["msas"] = sensor_data->sqm.msas;
 	json_data["nelm"] = sensor_data->sqm.nelm;
 	json_data["integration_time"] = sensor_data->sqm.integration_time;
